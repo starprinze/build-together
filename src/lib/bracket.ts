@@ -102,10 +102,8 @@ export async function advanceWinner(
 
   if (!nextMatch) return; // final
 
-  await supabase
-    .from("matches")
-    .update({ [slot]: winnerId })
-    .eq("id", nextMatch.id);
+  const update = slot === "team_a_id" ? { team_a_id: winnerId } : { team_b_id: winnerId };
+  await supabase.from("matches").update(update).eq("id", nextMatch.id);
 }
 
 export async function submitScore(matchId: string, scoreA: number, scoreB: number) {

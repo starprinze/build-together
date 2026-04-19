@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -71,12 +72,14 @@ function MatchCard({ match, onScoreClick }: { match: MatchRow; onScoreClick?: (m
     <Card className="p-0 overflow-hidden shadow-card">
       <TeamRow
         name={match.team_a?.name ?? (isBye && !match.team_a ? "BYE" : "TBD")}
+        teamId={match.team_a?.id ?? null}
         score={match.score_a}
         winner={isCompleted && match.winner_id === match.team_a_id}
       />
       <div className="h-px bg-border" />
       <TeamRow
         name={match.team_b?.name ?? (isBye && !match.team_b ? "BYE" : "TBD")}
+        teamId={match.team_b?.id ?? null}
         score={match.score_b}
         winner={isCompleted && match.winner_id === match.team_b_id}
       />
@@ -99,7 +102,28 @@ function MatchCard({ match, onScoreClick }: { match: MatchRow; onScoreClick?: (m
   );
 }
 
-function TeamRow({ name, score, winner }: { name: string; score: number | null; winner: boolean }) {
+function TeamRow({
+  name,
+  teamId,
+  score,
+  winner,
+}: {
+  name: string;
+  teamId: string | null;
+  score: number | null;
+  winner: boolean;
+}) {
+  const nameNode = (
+    <span
+      className={cn(
+        "text-sm truncate",
+        winner ? "font-semibold text-foreground" : "text-foreground",
+        teamId && "hover:text-primary hover:underline underline-offset-2",
+      )}
+    >
+      {name}
+    </span>
+  );
   return (
     <div
       className={cn(
@@ -107,9 +131,13 @@ function TeamRow({ name, score, winner }: { name: string; score: number | null; 
         winner && "bg-accent",
       )}
     >
-      <span className={cn("text-sm truncate", winner ? "font-semibold text-foreground" : "text-foreground")}>
-        {name}
-      </span>
+      {teamId ? (
+        <Link to={`/teams/${teamId}`} className="min-w-0 flex-1">
+          {nameNode}
+        </Link>
+      ) : (
+        nameNode
+      )}
       <span
         className={cn(
           "ml-3 text-sm font-mono tabular-nums w-7 text-right",

@@ -9,6 +9,7 @@ import AdminGuard from "@/components/AdminGuard";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import EventBracket from "./pages/EventBracket";
+import TeamProfile from "./pages/TeamProfile";
 import AdminEvents, { AdminLayout } from "./pages/admin/AdminEvents";
 import AdminTeams from "./pages/admin/AdminTeams";
 import AdminFixtures from "./pages/admin/AdminFixtures";
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/events/:id" element={<EventBracket />} />
+              <Route path="/teams/:id" element={<TeamProfile />} />
               <Route
                 element={
                   <AdminGuard>

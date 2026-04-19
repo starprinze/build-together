@@ -122,7 +122,9 @@ export type Database = {
           department: string
           event_id: string
           id: string
+          logo_url: string | null
           name: string
+          roster: string | null
         }
         Insert: {
           captain: string
@@ -130,7 +132,9 @@ export type Database = {
           department: string
           event_id: string
           id?: string
+          logo_url?: string | null
           name: string
+          roster?: string | null
         }
         Update: {
           captain?: string
@@ -138,7 +142,9 @@ export type Database = {
           department?: string
           event_id?: string
           id?: string
+          logo_url?: string | null
           name?: string
+          roster?: string | null
         }
         Relationships: [
           {

@@ -1,49 +1,92 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Trophy, Users } from "lucide-react";
+import { ArrowLeft, Trophy, Users, Radio } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BracketView, MatchRow, EventInfo } from "@/components/BracketView";
+import { StandingsTable } from "@/components/StandingsTable";
+import { EventGallery } from "@/components/EventGallery";
+import { computeStandings } from "@/lib/standings";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function EventBracket() {
   const { id } = useParams<{ id: string }>();
+  const { isAdmin } = useAuth();
   const [event, setEvent] = useState<EventInfo | null>(null);
   const [matches, setMatches] = useState<MatchRow[]>([]);
   const [teamCount, setTeamCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [live, setLive] = useState(false);
+
+  const loadMatches = useCallback(async () => {
+    if (!id) return;
+    const { data: mts } = await supabase
+      .from("matches")
+      .select(
+        "*, team_a:team_a_id(id,name,department), team_b:team_b_id(id,name,department), winner:winner_id(id,name)",
+      )
+      .eq("event_id", id)
+      .order("round")
+      .order("match_number");
+    setMatches((mts as any) ?? []);
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
-    const load = async () => {
-      const [{ data: ev }, { data: mts }, { count }] = await Promise.all([
+    let cancelled = false;
+    (async () => {
+      const [{ data: ev }, { count }] = await Promise.all([
         supabase.from("events").select("*").eq("id", id).maybeSingle(),
-        supabase
-          .from("matches")
-          .select("*, team_a:team_a_id(id,name,department), team_b:team_b_id(id,name,department), winner:winner_id(id,name)")
-          .eq("event_id", id)
-          .order("round")
-          .order("match_number"),
         supabase.from("teams").select("*", { count: "exact", head: true }).eq("event_id", id),
       ]);
+      if (cancelled) return;
       setEvent(ev as EventInfo | null);
-      setMatches((mts as any) ?? []);
       setTeamCount(count ?? 0);
+      await loadMatches();
       setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
     };
-    load();
-  }, [id]);
+  }, [id, loadMatches]);
 
-  if (loading) return <div className="container py-20 text-center text-muted-foreground">Loading bracket…</div>;
+  // Realtime: re-fetch matches (with joins) on any change for this event.
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`matches-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "matches", filter: `event_id=eq.${id}` },
+        () => {
+          loadMatches();
+        },
+      )
+      .subscribe((status) => {
+        setLive(status === "SUBSCRIBED");
+      });
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, loadMatches]);
+
+  if (loading)
+    return <div className="container py-20 text-center text-muted-foreground">Loading bracket…</div>;
   if (!event) return <div className="container py-20 text-center">Event not found.</div>;
 
   const totalRounds = matches.length ? Math.max(...matches.map((m) => m.round)) : 0;
   const finalMatch = matches.find((m) => m.round === totalRounds);
   const champion = totalRounds > 0 && finalMatch?.status === "completed" ? finalMatch.winner : null;
+  const standings = computeStandings(matches);
 
   return (
     <div className="container py-8 sm:py-12">
-      <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6"
+      >
         <ArrowLeft className="h-4 w-4" /> Back to events
       </Link>
 
@@ -51,8 +94,15 @@ export default function EventBracket() {
         <div>
           <Badge className="mb-2 bg-accent text-accent-foreground border-0">{event.sport}</Badge>
           <h1 className="text-3xl sm:text-4xl font-display font-bold">{event.name}</h1>
-          <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
-            <Users className="h-4 w-4" /> {teamCount} teams · {event.status}
+          <p className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
+            <span className="flex items-center gap-1.5">
+              <Users className="h-4 w-4" /> {teamCount} teams · {event.status}
+            </span>
+            {live && (
+              <span className="inline-flex items-center gap-1 text-primary text-xs font-medium">
+                <Radio className="h-3 w-3 animate-pulse" /> Live
+              </span>
+            )}
           </p>
         </div>
         {champion && (
@@ -66,15 +116,33 @@ export default function EventBracket() {
         )}
       </div>
 
-      {matches.length === 0 ? (
-        <Card className="p-12 text-center">
-          <Trophy className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-          <h3 className="font-display font-semibold mb-1">Bracket not generated yet</h3>
-          <p className="text-sm text-muted-foreground">Check back when the tournament begins.</p>
-        </Card>
-      ) : (
-        <BracketView matches={matches} />
-      )}
+      <Tabs defaultValue="bracket" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="bracket">Bracket</TabsTrigger>
+          <TabsTrigger value="standings">Standings</TabsTrigger>
+          <TabsTrigger value="gallery">Gallery</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="bracket" className="mt-0">
+          {matches.length === 0 ? (
+            <Card className="p-12 text-center">
+              <Trophy className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+              <h3 className="font-display font-semibold mb-1">Bracket not generated yet</h3>
+              <p className="text-sm text-muted-foreground">Check back when the tournament begins.</p>
+            </Card>
+          ) : (
+            <BracketView matches={matches} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="standings" className="mt-0">
+          <StandingsTable rows={standings} />
+        </TabsContent>
+
+        <TabsContent value="gallery" className="mt-0">
+          <EventGallery eventId={event.id} isAdmin={isAdmin} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

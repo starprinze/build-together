@@ -4,14 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Camera, Upload, Trash2, X, AlertCircle } from "lucide-react";
+import { Camera, Upload, Trash2, X, AlertCircle, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
-  CLOUDINARY_CLOUD_NAME,
-  CLOUDINARY_UPLOAD_PRESET,
   cldOptimized,
   cldThumb,
-  isCloudinaryConfigured,
+  getCloudinaryConfig,
   loadCloudinaryWidget,
+  type CloudinaryConfig,
 } from "@/lib/cloudinary";
 
 interface PhotoRow {
@@ -31,6 +31,7 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
   const [loading, setLoading] = useState(true);
   const [opening, setOpening] = useState(false);
   const [lightbox, setLightbox] = useState<PhotoRow | null>(null);
+  const [config, setConfig] = useState<CloudinaryConfig | null>(null);
 
   const load = async () => {
     const { data } = await supabase
@@ -44,6 +45,7 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
 
   useEffect(() => {
     load();
+    getCloudinaryConfig().then(setConfig);
     const channel = supabase
       .channel(`event-photos-${eventId}`)
       .on(
@@ -57,9 +59,11 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
     };
   }, [eventId]);
 
+  const cloudinaryReady = !!(config?.cloudName && config?.uploadPreset);
+
   const openUploader = async () => {
-    if (!isCloudinaryConfigured()) {
-      toast.error("Cloudinary is not configured. Add cloud name & upload preset.");
+    if (!cloudinaryReady) {
+      toast.error("Cloudinary is not configured. Add your cloud name & upload preset in admin settings.");
       return;
     }
     setOpening(true);
@@ -67,8 +71,8 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
       await loadCloudinaryWidget();
       const widget = window.cloudinary!.createUploadWidget(
         {
-          cloudName: CLOUDINARY_CLOUD_NAME,
-          uploadPreset: CLOUDINARY_UPLOAD_PRESET,
+          cloudName: config!.cloudName!,
+          uploadPreset: config!.uploadPreset!,
           sources: ["local", "camera", "url"],
           multiple: true,
           maxFiles: 20,
@@ -126,16 +130,19 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
         )}
       </div>
 
-      {isAdmin && !isCloudinaryConfigured() && (
+      {isAdmin && config && !cloudinaryReady && (
         <Card className="p-4 mb-4 border-destructive/40 bg-destructive/5 flex gap-3 items-start">
           <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-          <div className="text-sm">
+          <div className="text-sm flex-1">
             <div className="font-medium text-foreground">Cloudinary not configured</div>
             <p className="text-muted-foreground mt-1">
-              Add <code className="px-1 py-0.5 rounded bg-muted text-xs">VITE_CLOUDINARY_CLOUD_NAME</code> and{" "}
-              <code className="px-1 py-0.5 rounded bg-muted text-xs">VITE_CLOUDINARY_UPLOAD_PRESET</code> to enable uploads.
-              Create an unsigned upload preset in your Cloudinary dashboard → Settings → Upload.
+              Add your Cloudinary cloud name and unsigned upload preset to enable photo uploads.
             </p>
+            <Button asChild size="sm" variant="outline" className="mt-3">
+              <Link to="/admin/settings">
+                <Settings className="h-4 w-4 mr-1" /> Open settings
+              </Link>
+            </Button>
           </div>
         </Card>
       )}

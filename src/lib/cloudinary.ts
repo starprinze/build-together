@@ -1,11 +1,35 @@
-// Cloudinary unsigned upload widget loader.
-// Cloud name and unsigned upload preset are public values and safe in frontend code.
+// Cloudinary config is loaded from the public app_config table at runtime.
+// Cloud name + unsigned upload preset are public values, safe to expose.
 
-export const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string | undefined;
-export const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string | undefined;
+import { supabase } from "@/integrations/supabase/client";
 
-export const isCloudinaryConfigured = () =>
-  Boolean(CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET);
+export interface CloudinaryConfig {
+  cloudName: string | null;
+  uploadPreset: string | null;
+}
+
+let cached: Promise<CloudinaryConfig> | null = null;
+
+export function clearCloudinaryConfigCache() {
+  cached = null;
+}
+
+export function getCloudinaryConfig(): Promise<CloudinaryConfig> {
+  if (!cached) {
+    cached = (async () => {
+      const { data } = await supabase
+        .from("app_config")
+        .select("key,value")
+        .in("key", ["cloudinary_cloud_name", "cloudinary_upload_preset"]);
+      const map = Object.fromEntries((data ?? []).map((r: any) => [r.key, r.value]));
+      return {
+        cloudName: map["cloudinary_cloud_name"] ?? null,
+        uploadPreset: map["cloudinary_upload_preset"] ?? null,
+      };
+    })();
+  }
+  return cached;
+}
 
 declare global {
   interface Window {
@@ -44,13 +68,11 @@ export function loadCloudinaryWidget(): Promise<void> {
   return scriptPromise;
 }
 
-/** Build a thumbnail URL via Cloudinary on-the-fly transformations. */
 export function cldThumb(url: string, w = 400, h = 400) {
   if (!url.includes("/upload/")) return url;
   return url.replace("/upload/", `/upload/c_fill,g_auto,w_${w},h_${h},q_auto,f_auto/`);
 }
 
-/** Build an optimized full-size URL. */
 export function cldOptimized(url: string, maxW = 1600) {
   if (!url.includes("/upload/")) return url;
   return url.replace("/upload/", `/upload/c_limit,w_${maxW},q_auto,f_auto/`);

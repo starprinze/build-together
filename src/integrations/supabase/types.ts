@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      event_photos: {
+        Row: {
+          caption: string | null
+          cloudinary_public_id: string | null
+          created_at: string
+          event_id: string
+          height: number | null
+          id: string
+          thumbnail_url: string | null
+          uploaded_by: string | null
+          url: string
+          width: number | null
+        }
+        Insert: {
+          caption?: string | null
+          cloudinary_public_id?: string | null
+          created_at?: string
+          event_id: string
+          height?: number | null
+          id?: string
+          thumbnail_url?: string | null
+          uploaded_by?: string | null
+          url: string
+          width?: number | null
+        }
+        Update: {
+          caption?: string | null
+          cloudinary_public_id?: string | null
+          created_at?: string
+          event_id?: string
+          height?: number | null
+          id?: string
+          thumbnail_url?: string | null
+          uploaded_by?: string | null
+          url?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_photos_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           created_at: string

@@ -53,7 +53,7 @@ function AdminTab({ to, label }: { to: string; label: string }) {
   );
 }
 
-const emptyEvent = { name: "", sport: "", start_date: "", end_date: "", status: "upcoming" as const };
+const emptyEvent: { name: string; sport: string; start_date: string; end_date: string; status: Event["status"] } = { name: "", sport: "", start_date: "", end_date: "", status: "upcoming" };
 
 export default function AdminEvents() {
   const [events, setEvents] = useState<Event[]>([]);

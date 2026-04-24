@@ -47,6 +47,7 @@ export default function Layout() {
                 <ShieldCheck className="h-4 w-4" /> Admin
               </NavLink>
             )}
+            {isAdmin && <NotificationBell />}
             {user ? (
               <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1.5">
                 <LogOut className="h-4 w-4" /> Sign out

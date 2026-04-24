@@ -1,18 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Camera, Upload, Trash2, X, AlertCircle, Settings } from "lucide-react";
-import { Link } from "react-router-dom";
-import {
-  cldOptimized,
-  cldThumb,
-  getCloudinaryConfig,
-  loadCloudinaryWidget,
-  type CloudinaryConfig,
-} from "@/lib/cloudinary";
+import { Camera, Upload, Trash2, X } from "lucide-react";
 
 interface PhotoRow {
   id: string;
@@ -26,12 +18,48 @@ interface PhotoRow {
   created_at: string;
 }
 
+const BUCKET = "event-photos";
+
+function publicUrl(path: string) {
+  return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+// Render a thumbnail via Supabase image transformation if available; fall back to original.
+function thumbUrl(path: string | null, fallback: string) {
+  if (!path) return fallback;
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path, {
+    transform: { width: 400, height: 400, resize: "cover" },
+  });
+  return data.publicUrl ?? fallback;
+}
+
+async function downscaleToBlob(file: File, maxDim = 2000): Promise<Blob> {
+  if (!file.type.startsWith("image/") || file.type === "image/gif") return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const ratio = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+    if (ratio === 1) return file;
+    const w = Math.round(bitmap.width * ratio);
+    const h = Math.round(bitmap.height * ratio);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    return await new Promise<Blob>((resolve) =>
+      canvas.toBlob((b) => resolve(b ?? file), "image/jpeg", 0.85),
+    );
+  } catch {
+    return file;
+  }
+}
+
 export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: boolean }) {
   const [photos, setPhotos] = useState<PhotoRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [opening, setOpening] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [lightbox, setLightbox] = useState<PhotoRow | null>(null);
-  const [config, setConfig] = useState<CloudinaryConfig | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     const { data } = await supabase
@@ -45,7 +73,6 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
 
   useEffect(() => {
     load();
-    getCloudinaryConfig().then(setConfig);
     const channel = supabase
       .channel(`event-photos-${eventId}`)
       .on(
@@ -59,59 +86,60 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
     };
   }, [eventId]);
 
-  const cloudinaryReady = !!(config?.cloudName && config?.uploadPreset);
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    setUploading(true);
+    let ok = 0;
+    let failed = 0;
+    for (const file of Array.from(files)) {
+      try {
+        const blob = await downscaleToBlob(file, 2000);
+        const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+        const path = `${eventId}/${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from(BUCKET)
+          .upload(path, blob, { contentType: blob.type || file.type, upsert: false });
+        if (upErr) throw upErr;
 
-  const openUploader = async () => {
-    if (!cloudinaryReady) {
-      toast.error("Cloudinary is not configured. Add your cloud name & upload preset in admin settings.");
-      return;
+        // Get dimensions for nicer layout (best effort)
+        let width: number | null = null;
+        let height: number | null = null;
+        try {
+          const bm = await createImageBitmap(blob);
+          width = bm.width;
+          height = bm.height;
+        } catch { /* ignore */ }
+
+        const { error: insErr } = await supabase.from("event_photos").insert({
+          event_id: eventId,
+          url: publicUrl(path),
+          thumbnail_url: path, // store path; we transform on render
+          width,
+          height,
+          cloudinary_public_id: null,
+        });
+        if (insErr) throw insErr;
+        ok++;
+      } catch (err: any) {
+        console.error(err);
+        failed++;
+      }
     }
-    setOpening(true);
-    try {
-      await loadCloudinaryWidget();
-      const widget = window.cloudinary!.createUploadWidget(
-        {
-          cloudName: config!.cloudName!,
-          uploadPreset: config!.uploadPreset!,
-          sources: ["local", "camera", "url"],
-          multiple: true,
-          maxFiles: 20,
-          clientAllowedFormats: ["png", "jpg", "jpeg", "webp", "gif", "heic"],
-          maxImageFileSize: 10_000_000,
-          folder: `events/${eventId}`,
-          tags: [`event:${eventId}`],
-        },
-        async (error, result) => {
-          if (error) {
-            toast.error("Upload failed");
-            return;
-          }
-          if (result?.event === "success") {
-            const info = result.info;
-            const { error: insertErr } = await supabase.from("event_photos").insert({
-              event_id: eventId,
-              url: info.secure_url,
-              thumbnail_url: info.thumbnail_url ?? null,
-              caption: null,
-              width: info.width ?? null,
-              height: info.height ?? null,
-              cloudinary_public_id: info.public_id ?? null,
-            });
-            if (insertErr) toast.error(insertErr.message);
-            else toast.success("Photo added");
-          }
-        },
-      );
-      widget.open();
-    } catch {
-      toast.error("Could not open uploader");
-    } finally {
-      setOpening(false);
-    }
+    setUploading(false);
+    if (ok) toast.success(`${ok} photo${ok === 1 ? "" : "s"} uploaded`);
+    if (failed) toast.error(`${failed} upload${failed === 1 ? "" : "s"} failed`);
+    if (fileInput.current) fileInput.current.value = "";
   };
 
   const removePhoto = async (p: PhotoRow) => {
     if (!confirm("Remove this photo?")) return;
+    // Best-effort delete from storage if it lives in our bucket
+    if (p.thumbnail_url && !p.thumbnail_url.startsWith("http")) {
+      await supabase.storage.from(BUCKET).remove([p.thumbnail_url]);
+    } else if (p.url?.includes(`/storage/v1/object/public/${BUCKET}/`)) {
+      const path = p.url.split(`/storage/v1/object/public/${BUCKET}/`)[1];
+      if (path) await supabase.storage.from(BUCKET).remove([path]);
+    }
     const { error } = await supabase.from("event_photos").delete().eq("id", p.id);
     if (error) toast.error(error.message);
     else toast.success("Photo removed");
@@ -124,28 +152,25 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
           <Camera className="h-4 w-4" /> {photos.length} photo{photos.length === 1 ? "" : "s"}
         </div>
         {isAdmin && (
-          <Button onClick={openUploader} disabled={opening} className="shadow-court">
-            <Upload className="h-4 w-4 mr-1" /> {opening ? "Opening…" : "Upload photos"}
-          </Button>
+          <>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => handleFiles(e.target.files)}
+            />
+            <Button
+              onClick={() => fileInput.current?.click()}
+              disabled={uploading}
+              className="shadow-court"
+            >
+              <Upload className="h-4 w-4 mr-1" /> {uploading ? "Uploading…" : "Upload photos"}
+            </Button>
+          </>
         )}
       </div>
-
-      {isAdmin && config && !cloudinaryReady && (
-        <Card className="p-4 mb-4 border-destructive/40 bg-destructive/5 flex gap-3 items-start">
-          <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-          <div className="text-sm flex-1">
-            <div className="font-medium text-foreground">Cloudinary not configured</div>
-            <p className="text-muted-foreground mt-1">
-              Add your Cloudinary cloud name and unsigned upload preset to enable photo uploads.
-            </p>
-            <Button asChild size="sm" variant="outline" className="mt-3">
-              <Link to="/admin/settings">
-                <Settings className="h-4 w-4 mr-1" /> Open settings
-              </Link>
-            </Button>
-          </div>
-        </Card>
-      )}
 
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
@@ -170,7 +195,7 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
                 className="absolute inset-0 focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <img
-                  src={p.thumbnail_url ?? cldThumb(p.url)}
+                  src={thumbUrl(p.thumbnail_url, p.url)}
                   alt={p.caption ?? "Event photo"}
                   loading="lazy"
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -197,7 +222,7 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
           {lightbox && (
             <div className="relative">
               <img
-                src={cldOptimized(lightbox.url)}
+                src={lightbox.url}
                 alt={lightbox.caption ?? "Event photo"}
                 className="w-full h-auto max-h-[85vh] object-contain bg-black"
               />

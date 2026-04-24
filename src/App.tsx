@@ -14,6 +14,7 @@ import AdminEvents, { AdminLayout } from "./pages/admin/AdminEvents";
 import AdminTeams from "./pages/admin/AdminTeams";
 import AdminFixtures from "./pages/admin/AdminFixtures";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminUsers from "./pages/admin/AdminUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
                 <Route path="/admin" element={<AdminEvents />} />
                 <Route path="/admin/teams" element={<AdminTeams />} />
                 <Route path="/admin/fixtures" element={<AdminFixtures />} />
+                <Route path="/admin/users" element={<AdminUsers />} />
                 <Route path="/admin/settings" element={<AdminSettings />} />
               </Route>
               <Route path="*" element={<NotFound />} />

@@ -15,6 +15,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 
+type FixtureFormat = "single_elim" | "double_elim" | "round_robin" | "league";
+
 interface Event {
   id: string;
   name: string;
@@ -22,7 +24,15 @@ interface Event {
   start_date: string;
   end_date: string;
   status: "upcoming" | "ongoing" | "completed";
+  format: FixtureFormat;
 }
+
+const FORMAT_LABELS: Record<FixtureFormat, string> = {
+  single_elim: "Single elimination",
+  double_elim: "Double elimination",
+  round_robin: "Round robin",
+  league: "League (home & away)",
+};
 
 export function AdminLayout() {
   return (

@@ -128,6 +128,7 @@ export default function AdminEvents() {
       start_date: ev.start_date,
       end_date: ev.end_date,
       status: ev.status,
+      format: ev.format ?? "single_elim",
     });
     setOpen(true);
   };

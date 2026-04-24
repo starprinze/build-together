@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, refreshRole } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,6 +63,7 @@ export default function Login() {
       const { data, error } = await supabase.rpc("claim_first_admin");
       if (error) throw error;
       if (data === true) {
+        await refreshRole();
         toast.success("You are now the first admin");
         navigate("/admin");
       } else {

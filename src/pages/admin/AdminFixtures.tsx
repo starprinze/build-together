@@ -6,14 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Sparkles, RotateCcw } from "lucide-react";
-import { generateFixtures, resetFixtures, submitScore } from "@/lib/bracket";
+import { Sparkles, RotateCcw, FileDown, FileText, Wand2 } from "lucide-react";
+import { generateFixtures, resetFixtures, submitScore, type FixtureFormat } from "@/lib/bracket";
 import { BracketView, MatchRow } from "@/components/BracketView";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
+import { computeStandings } from "@/lib/standings";
+import { StandingsTable } from "@/components/StandingsTable";
 
-interface Event { id: string; name: string }
+interface Event { id: string; name: string; format: FixtureFormat }
 
 export default function AdminFixtures() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -23,13 +25,18 @@ export default function AdminFixtures() {
   const [scoreA, setScoreA] = useState("");
   const [scoreB, setScoreB] = useState("");
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [aiBusy, setAiBusy] = useState<string | null>(null);
+  const [summaryView, setSummaryView] = useState<MatchRow | null>(null);
 
   useEffect(() => {
-    supabase.from("events").select("id,name").order("created_at", { ascending: false }).then(({ data }) => {
+    supabase.from("events").select("id,name,format").order("created_at", { ascending: false }).then(({ data }) => {
       setEvents((data as Event[]) ?? []);
       if (data && data.length && !eventId) setEventId(data[0].id);
     });
   }, []);
+
+  const currentEvent = events.find((e) => e.id === eventId);
 
   const load = async () => {
     if (!eventId) return setMatches([]);
@@ -45,13 +52,13 @@ export default function AdminFixtures() {
   useEffect(() => { load(); }, [eventId]);
 
   const handleGenerate = async () => {
-    if (!eventId) return;
+    if (!eventId || !currentEvent) return;
     if (matches.length && !confirm("This wipes existing fixtures. Continue?")) return;
     setBusy(true);
     try {
       const { data: teams } = await supabase.from("teams").select("id").eq("event_id", eventId);
       if (!teams || teams.length < 2) throw new Error("Register at least 2 teams first");
-      await generateFixtures(eventId, teams.map((t) => t.id));
+      await generateFixtures(eventId, teams.map((t) => t.id), currentEvent.format ?? "single_elim");
       toast.success("Fixtures generated");
       load();
     } catch (err: any) {
@@ -91,6 +98,53 @@ export default function AdminFixtures() {
     }
   };
 
+  const handleExport = async (kind: "pdf" | "excel") => {
+    if (!eventId) return;
+    setExporting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("export-event", {
+        body: { eventId, format: kind },
+      });
+      if (error) throw error;
+      // Edge function returns base64 so we can trigger a download
+      const { filename, mime, data: b64 } = data as { filename: string; mime: string; data: string };
+      const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const blob = new Blob([bin], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`${kind.toUpperCase()} downloaded`);
+    } catch (err: any) {
+      toast.error(err.message ?? "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const generateSummary = async (m: MatchRow) => {
+    setAiBusy(m.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("match-summary", {
+        body: { matchId: m.id },
+      });
+      if (error) throw error;
+      toast.success("Summary generated");
+      setSummaryView({ ...m, summary: (data as any)?.summary } as any);
+      load();
+    } catch (err: any) {
+      toast.error(err.message ?? "Summary failed");
+    } finally {
+      setAiBusy(null);
+    }
+  };
+
+  const standings = computeStandings(matches);
+  const showStandings =
+    currentEvent?.format === "round_robin" || currentEvent?.format === "league";
+
   return (
     <div>
       <h1 className="text-2xl font-display font-bold mb-6">Fixtures & Scores</h1>
@@ -108,18 +162,71 @@ export default function AdminFixtures() {
           <Sparkles className="h-4 w-4 mr-1" /> Generate fixtures
         </Button>
         {matches.length > 0 && (
-          <Button variant="outline" onClick={handleReset}>
-            <RotateCcw className="h-4 w-4 mr-1" /> Reset
-          </Button>
+          <>
+            <Button variant="outline" onClick={handleReset}>
+              <RotateCcw className="h-4 w-4 mr-1" /> Reset
+            </Button>
+            <Button variant="outline" onClick={() => handleExport("pdf")} disabled={exporting}>
+              <FileText className="h-4 w-4 mr-1" /> Export PDF
+            </Button>
+            <Button variant="outline" onClick={() => handleExport("excel")} disabled={exporting}>
+              <FileDown className="h-4 w-4 mr-1" /> Export Excel
+            </Button>
+          </>
         )}
       </div>
 
       {matches.length === 0 ? (
         <Card className="p-12 text-center text-muted-foreground">
-          No fixtures yet. Click "Generate fixtures" to build the bracket.
+          No fixtures yet. Click "Generate fixtures" to build the {currentEvent?.format ?? "bracket"}.
         </Card>
       ) : (
-        <BracketView matches={matches} onScoreClick={openScore} />
+        <>
+          {showStandings && (
+            <Card className="p-4 mb-6 shadow-card">
+              <h2 className="text-lg font-display font-semibold mb-3">Standings</h2>
+              <StandingsTable rows={standings} />
+            </Card>
+          )}
+          <BracketView matches={matches} onScoreClick={openScore} />
+
+          {/* Per-match AI summary list for completed matches */}
+          {matches.some((m) => m.status === "completed") && (
+            <Card className="p-4 mt-6 shadow-card">
+              <h2 className="text-lg font-display font-semibold mb-3">AI match recaps</h2>
+              <div className="space-y-2">
+                {matches.filter((m) => m.status === "completed").map((m) => (
+                  <div key={m.id} className="flex items-center justify-between gap-3 py-2 border-b border-border last:border-0">
+                    <div className="min-w-0 flex-1 text-sm">
+                      <div className="truncate">
+                        {m.team_a?.name} <span className="font-mono text-muted-foreground">{m.score_a}</span>
+                        {" – "}
+                        <span className="font-mono text-muted-foreground">{m.score_b}</span> {m.team_b?.name}
+                      </div>
+                      {(m as any).summary && (
+                        <button
+                          className="text-xs text-primary hover:underline"
+                          onClick={() => setSummaryView(m)}
+                        >
+                          View recap
+                        </button>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => generateSummary(m)}
+                      disabled={aiBusy === m.id}
+                    >
+                      <Wand2 className="h-3.5 w-3.5 mr-1" />
+                      {aiBusy === m.id ? "Writing…" : (m as any).summary ? "Regenerate" : "Generate recap"}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </>
       )}
 
       <Dialog open={!!scoringMatch} onOpenChange={(o) => !o && setScoringMatch(null)}>
@@ -132,23 +239,11 @@ export default function AdminFixtures() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>{scoringMatch.team_a?.name}</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    required
-                    value={scoreA}
-                    onChange={(e) => setScoreA(e.target.value)}
-                  />
+                  <Input type="number" min={0} required value={scoreA} onChange={(e) => setScoreA(e.target.value)} />
                 </div>
                 <div>
                   <Label>{scoringMatch.team_b?.name}</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    required
-                    value={scoreB}
-                    onChange={(e) => setScoreB(e.target.value)}
-                  />
+                  <Input type="number" min={0} required value={scoreB} onChange={(e) => setScoreB(e.target.value)} />
                 </div>
               </div>
               <DialogFooter>
@@ -156,6 +251,20 @@ export default function AdminFixtures() {
               </DialogFooter>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!summaryView} onOpenChange={(o) => !o && setSummaryView(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Match recap</DialogTitle>
+            {summaryView && (
+              <DialogDescription>
+                {summaryView.team_a?.name} {summaryView.score_a} – {summaryView.score_b} {summaryView.team_b?.name}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          <p className="text-sm whitespace-pre-wrap">{(summaryView as any)?.summary}</p>
         </DialogContent>
       </Dialog>
     </div>

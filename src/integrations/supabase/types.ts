@@ -83,6 +83,7 @@ export type Database = {
         Row: {
           created_at: string
           end_date: string
+          format: Database["public"]["Enums"]["fixture_format"]
           id: string
           name: string
           sport: string
@@ -92,6 +93,7 @@ export type Database = {
         Insert: {
           created_at?: string
           end_date: string
+          format?: Database["public"]["Enums"]["fixture_format"]
           id?: string
           name: string
           sport: string
@@ -101,6 +103,7 @@ export type Database = {
         Update: {
           created_at?: string
           end_date?: string
+          format?: Database["public"]["Enums"]["fixture_format"]
           id?: string
           name?: string
           sport?: string
@@ -111,6 +114,7 @@ export type Database = {
       }
       matches: {
         Row: {
+          bracket: string
           created_at: string
           event_id: string
           id: string
@@ -119,11 +123,13 @@ export type Database = {
           score_a: number | null
           score_b: number | null
           status: Database["public"]["Enums"]["match_status"]
+          summary: string | null
           team_a_id: string | null
           team_b_id: string | null
           winner_id: string | null
         }
         Insert: {
+          bracket?: string
           created_at?: string
           event_id: string
           id?: string
@@ -132,11 +138,13 @@ export type Database = {
           score_a?: number | null
           score_b?: number | null
           status?: Database["public"]["Enums"]["match_status"]
+          summary?: string | null
           team_a_id?: string | null
           team_b_id?: string | null
           winner_id?: string | null
         }
         Update: {
+          bracket?: string
           created_at?: string
           event_id?: string
           id?: string
@@ -145,6 +153,7 @@ export type Database = {
           score_a?: number | null
           score_b?: number | null
           status?: Database["public"]["Enums"]["match_status"]
+          summary?: string | null
           team_a_id?: string | null
           team_b_id?: string | null
           winner_id?: string | null
@@ -174,6 +183,64 @@ export type Database = {
           {
             foreignKeyName: "matches_winner_id_fkey"
             columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          event_id: string | null
+          id: string
+          match_id: string | null
+          read_at: string | null
+          team_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          match_id?: string | null
+          read_at?: string | null
+          team_id?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          match_id?: string | null
+          read_at?: string | null
+          team_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_team_id_fkey"
+            columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
@@ -260,6 +327,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       event_status: "upcoming" | "ongoing" | "completed"
+      fixture_format: "single_elim" | "double_elim" | "round_robin" | "league"
       match_status: "pending" | "completed" | "bye"
     }
     CompositeTypes: {
@@ -390,6 +458,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       event_status: ["upcoming", "ongoing", "completed"],
+      fixture_format: ["single_elim", "double_elim", "round_robin", "league"],
       match_status: ["pending", "completed", "bye"],
     },
   },

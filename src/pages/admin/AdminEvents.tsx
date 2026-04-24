@@ -15,6 +15,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 
+type FixtureFormat = "single_elim" | "double_elim" | "round_robin" | "league";
+
 interface Event {
   id: string;
   name: string;
@@ -22,7 +24,15 @@ interface Event {
   start_date: string;
   end_date: string;
   status: "upcoming" | "ongoing" | "completed";
+  format: FixtureFormat;
 }
+
+const FORMAT_LABELS: Record<FixtureFormat, string> = {
+  single_elim: "Single elimination",
+  double_elim: "Double elimination",
+  round_robin: "Round robin",
+  league: "League (home & away)",
+};
 
 export function AdminLayout() {
   return (
@@ -32,6 +42,7 @@ export function AdminLayout() {
         <AdminTab to="/admin/teams" label="Teams" />
         <AdminTab to="/admin/fixtures" label="Fixtures & Scores" />
         <AdminTab to="/admin/users" label="Users" />
+        <AdminTab to="/admin/notifications" label="Notifications" />
         <AdminTab to="/admin/settings" label="Settings" />
       </div>
       <Outlet />
@@ -55,7 +66,7 @@ function AdminTab({ to, label }: { to: string; label: string }) {
   );
 }
 
-const emptyEvent: { name: string; sport: string; start_date: string; end_date: string; status: Event["status"] } = { name: "", sport: "", start_date: "", end_date: "", status: "upcoming" };
+const emptyEvent: { name: string; sport: string; start_date: string; end_date: string; status: Event["status"]; format: FixtureFormat } = { name: "", sport: "", start_date: "", end_date: "", status: "upcoming", format: "single_elim" };
 
 export default function AdminEvents() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -117,6 +128,7 @@ export default function AdminEvents() {
       start_date: ev.start_date,
       end_date: ev.end_date,
       status: ev.status,
+      format: ev.format ?? "single_elim",
     });
     setOpen(true);
   };
@@ -175,6 +187,17 @@ export default function AdminEvents() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label>Tournament format</Label>
+                <Select value={form.format} onValueChange={(v: FixtureFormat) => setForm({ ...form, format: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(FORMAT_LABELS) as FixtureFormat[]).map((k) => (
+                      <SelectItem key={k} value={k}>{FORMAT_LABELS[k]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <DialogFooter>
                 <Button type="submit" className="shadow-court">{editing ? "Save changes" : "Create"}</Button>
               </DialogFooter>
@@ -193,9 +216,10 @@ export default function AdminEvents() {
           {events.map((ev) => (
             <Card key={ev.id} className="p-4 flex items-center justify-between gap-4 shadow-card">
               <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
+                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                   <h3 className="font-display font-semibold truncate">{ev.name}</h3>
                   <Badge variant="outline" className="text-xs">{ev.status}</Badge>
+                  <Badge variant="secondary" className="text-xs">{FORMAT_LABELS[ev.format ?? "single_elim"]}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground truncate">
                   {ev.sport} · {new Date(ev.start_date).toLocaleDateString()} → {new Date(ev.end_date).toLocaleDateString()}

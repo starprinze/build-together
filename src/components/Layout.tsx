@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Trophy, LogOut, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/NotificationBell";
 
 export default function Layout() {
   const { user, isAdmin, signOut } = useAuth();
@@ -46,6 +47,7 @@ export default function Layout() {
                 <ShieldCheck className="h-4 w-4" /> Admin
               </NavLink>
             )}
+            {isAdmin && <NotificationBell />}
             {user ? (
               <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1.5">
                 <LogOut className="h-4 w-4" /> Sign out

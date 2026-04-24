@@ -187,6 +187,17 @@ export default function AdminEvents() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label>Tournament format</Label>
+                <Select value={form.format} onValueChange={(v: FixtureFormat) => setForm({ ...form, format: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(FORMAT_LABELS) as FixtureFormat[]).map((k) => (
+                      <SelectItem key={k} value={k}>{FORMAT_LABELS[k]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <DialogFooter>
                 <Button type="submit" className="shadow-court">{editing ? "Save changes" : "Create"}</Button>
               </DialogFooter>

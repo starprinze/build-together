@@ -42,6 +42,7 @@ export function AdminLayout() {
         <AdminTab to="/admin/teams" label="Teams" />
         <AdminTab to="/admin/fixtures" label="Fixtures & Scores" />
         <AdminTab to="/admin/users" label="Users" />
+        <AdminTab to="/admin/notifications" label="Notifications" />
         <AdminTab to="/admin/settings" label="Settings" />
       </div>
       <Outlet />

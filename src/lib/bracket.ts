@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export type FixtureFormat = "single_elim" | "double_elim" | "round_robin" | "league";
+
 function nextPowerOfTwo(n: number): number {
   let p = 1;
   while (p < n) p *= 2;
@@ -15,19 +17,53 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-export async function generateFixtures(eventId: string, teamIds: string[]) {
+interface Row {
+  event_id: string;
+  round: number;
+  match_number: number;
+  team_a_id: string | null;
+  team_b_id: string | null;
+  winner_id?: string | null;
+  status: "pending" | "completed" | "bye";
+  bracket?: string;
+}
+
+export async function generateFixtures(
+  eventId: string,
+  teamIds: string[],
+  format: FixtureFormat = "single_elim",
+) {
   if (teamIds.length < 2) throw new Error("Need at least 2 teams");
 
-  // wipe existing
   await supabase.from("matches").delete().eq("event_id", eventId);
 
   const shuffled = shuffle(teamIds);
-  const size = nextPowerOfTwo(shuffled.length);
-  const totalRounds = Math.log2(size);
-  const slots: (string | null)[] = [...shuffled, ...Array(size - shuffled.length).fill(null)];
+  let rows: Row[] = [];
 
-  const rows: any[] = [];
-  // Round 1
+  if (format === "single_elim") {
+    rows = buildSingleElim(eventId, shuffled);
+  } else if (format === "double_elim") {
+    rows = buildDoubleElim(eventId, shuffled);
+  } else if (format === "round_robin" || format === "league") {
+    rows = buildRoundRobin(eventId, shuffled, format === "league" ? 2 : 1);
+  }
+
+  const { error } = await supabase.from("matches").insert(rows);
+  if (error) throw error;
+
+  if (format === "single_elim") {
+    const totalRounds = Math.log2(nextPowerOfTwo(shuffled.length));
+    await propagateByes(eventId, totalRounds);
+  }
+}
+
+// ---------- SINGLE ELIMINATION ----------
+function buildSingleElim(eventId: string, teamIds: string[]): Row[] {
+  const size = nextPowerOfTwo(teamIds.length);
+  const totalRounds = Math.log2(size);
+  const slots: (string | null)[] = [...teamIds, ...Array(size - teamIds.length).fill(null)];
+  const rows: Row[] = [];
+
   for (let i = 0; i < size / 2; i++) {
     const a = slots[i * 2];
     const b = slots[i * 2 + 1];
@@ -41,9 +77,9 @@ export async function generateFixtures(eventId: string, teamIds: string[]) {
       team_b_id: b,
       winner_id: winner,
       status: isBye ? "bye" : "pending",
+      bracket: "main",
     });
   }
-  // Empty later rounds
   for (let r = 2; r <= totalRounds; r++) {
     const matches = size / Math.pow(2, r);
     for (let i = 0; i < matches; i++) {
@@ -54,15 +90,124 @@ export async function generateFixtures(eventId: string, teamIds: string[]) {
         team_a_id: null,
         team_b_id: null,
         status: "pending",
+        bracket: "main",
+      });
+    }
+  }
+  return rows;
+}
+
+// ---------- ROUND ROBIN / LEAGUE ----------
+// Circle method: each round has n/2 games; n-1 rounds for single round-robin.
+function buildRoundRobin(eventId: string, teamIds: string[], legs: 1 | 2): Row[] {
+  const teams = [...teamIds];
+  if (teams.length % 2 === 1) teams.push("__BYE__");
+  const n = teams.length;
+  const roundsPerLeg = n - 1;
+  const half = n / 2;
+  const rows: Row[] = [];
+
+  // Fixed pivot, rotate the rest
+  const arr = [...teams];
+  for (let leg = 0; leg < legs; leg++) {
+    let local = [...arr];
+    for (let r = 0; r < roundsPerLeg; r++) {
+      const round = leg * roundsPerLeg + r + 1;
+      let matchNo = 1;
+      for (let i = 0; i < half; i++) {
+        const a = local[i];
+        const b = local[n - 1 - i];
+        if (a === "__BYE__" || b === "__BYE__") continue;
+        // Alternate home/away on second leg
+        const [ta, tb] = leg === 1 ? [b, a] : [a, b];
+        rows.push({
+          event_id: eventId,
+          round,
+          match_number: matchNo++,
+          team_a_id: ta,
+          team_b_id: tb,
+          status: "pending",
+          bracket: "main",
+        });
+      }
+      // rotate (keep first fixed)
+      local = [local[0], local[n - 1], ...local.slice(1, n - 1)];
+    }
+  }
+  return rows;
+}
+
+// ---------- DOUBLE ELIMINATION ----------
+// Generates winners + losers + grand final scaffolding. Teams populate winners R1; advancement
+// is handled by advanceWinner which now also drops losers into the losers bracket.
+function buildDoubleElim(eventId: string, teamIds: string[]): Row[] {
+  const size = nextPowerOfTwo(teamIds.length);
+  const wbRounds = Math.log2(size);
+  const slots: (string | null)[] = [...teamIds, ...Array(size - teamIds.length).fill(null)];
+  const rows: Row[] = [];
+
+  // Winners bracket
+  for (let i = 0; i < size / 2; i++) {
+    const a = slots[i * 2];
+    const b = slots[i * 2 + 1];
+    const isBye = a === null || b === null;
+    rows.push({
+      event_id: eventId,
+      round: 1,
+      match_number: i + 1,
+      team_a_id: a,
+      team_b_id: b,
+      winner_id: isBye ? (a ?? b) : null,
+      status: isBye ? "bye" : "pending",
+      bracket: "winners",
+    });
+  }
+  for (let r = 2; r <= wbRounds; r++) {
+    const matches = size / Math.pow(2, r);
+    for (let i = 0; i < matches; i++) {
+      rows.push({
+        event_id: eventId,
+        round: r,
+        match_number: i + 1,
+        team_a_id: null,
+        team_b_id: null,
+        status: "pending",
+        bracket: "winners",
       });
     }
   }
 
-  const { error } = await supabase.from("matches").insert(rows);
-  if (error) throw error;
+  // Losers bracket: 2*(wbRounds-1) rounds. Simplified placeholder structure.
+  const lbRounds = Math.max(1, 2 * (wbRounds - 1));
+  let lbMatchesThisRound = size / 4;
+  for (let r = 1; r <= lbRounds; r++) {
+    const count = Math.max(1, Math.floor(lbMatchesThisRound));
+    for (let i = 0; i < count; i++) {
+      rows.push({
+        event_id: eventId,
+        round: r,
+        match_number: i + 1,
+        team_a_id: null,
+        team_b_id: null,
+        status: "pending",
+        bracket: "losers",
+      });
+    }
+    if (r % 2 === 0) lbMatchesThisRound = lbMatchesThisRound / 2;
+  }
 
-  // Propagate byes
-  await propagateByes(eventId, totalRounds);
+  // Grand final
+  rows.push({
+    event_id: eventId,
+    round: 1,
+    match_number: 1,
+    team_a_id: null,
+    team_b_id: null,
+    status: "pending",
+    bracket: "grand_final",
+  });
+
+  return rows;
 }
 
 async function propagateByes(eventId: string, totalRounds: number) {
@@ -72,6 +217,7 @@ async function propagateByes(eventId: string, totalRounds: number) {
       .select("*")
       .eq("event_id", eventId)
       .eq("round", r)
+      .eq("bracket", "main")
       .order("match_number");
     if (!matches) continue;
     for (const m of matches) {
@@ -86,7 +232,7 @@ export async function advanceWinner(
   eventId: string,
   round: number,
   matchNumber: number,
-  winnerId: string
+  winnerId: string,
 ) {
   const nextRound = round + 1;
   const nextMatchNumber = Math.ceil(matchNumber / 2);
@@ -98,10 +244,10 @@ export async function advanceWinner(
     .eq("event_id", eventId)
     .eq("round", nextRound)
     .eq("match_number", nextMatchNumber)
+    .eq("bracket", "main")
     .maybeSingle();
 
-  if (!nextMatch) return; // final
-
+  if (!nextMatch) return;
   const update = slot === "team_a_id" ? { team_a_id: winnerId } : { team_b_id: winnerId };
   await supabase.from("matches").update(update).eq("id", nextMatch.id);
 }
@@ -122,7 +268,10 @@ export async function submitScore(matchId: string, scoreA: number, scoreB: numbe
     .update({ score_a: scoreA, score_b: scoreB, winner_id: winnerId, status: "completed" })
     .eq("id", matchId);
 
-  await advanceWinner(match.event_id, match.round, match.match_number, winnerId);
+  // Only auto-advance for single-elim 'main' brackets to avoid corrupting RR/league standings.
+  if (match.bracket === "main") {
+    await advanceWinner(match.event_id, match.round, match.match_number, winnerId);
+  }
 }
 
 export async function resetFixtures(eventId: string) {

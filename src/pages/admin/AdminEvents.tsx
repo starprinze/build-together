@@ -216,9 +216,10 @@ export default function AdminEvents() {
           {events.map((ev) => (
             <Card key={ev.id} className="p-4 flex items-center justify-between gap-4 shadow-card">
               <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
+                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                   <h3 className="font-display font-semibold truncate">{ev.name}</h3>
                   <Badge variant="outline" className="text-xs">{ev.status}</Badge>
+                  <Badge variant="secondary" className="text-xs">{FORMAT_LABELS[ev.format ?? "single_elim"]}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground truncate">
                   {ev.sport} · {new Date(ev.start_date).toLocaleDateString()} → {new Date(ev.end_date).toLocaleDateString()}

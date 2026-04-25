@@ -1,18 +1,48 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Trophy, Users, Radio } from "lucide-react";
+import { ArrowLeft, Trophy, Users, Radio, Calendar, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BracketView, MatchRow, EventInfo } from "@/components/BracketView";
 import { StandingsTable } from "@/components/StandingsTable";
-import { EventGallery } from "@/components/EventGallery";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchReactions } from "@/components/MatchReactions";
 import { computeStandings } from "@/lib/standings";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+
+const EventGallery = lazy(() =>
+  import("@/components/EventGallery").then((m) => ({ default: m.EventGallery })),
+);
+
+function formatDateRange(start?: string | null, end?: string | null) {
+  if (!start) return null;
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
+  const s = new Date(start).toLocaleDateString(undefined, opts);
+  if (!end || end === start) return s;
+  const e = new Date(end).toLocaleDateString(undefined, opts);
+  return `${s} – ${e}`;
+}
+
+async function shareEvent(name: string) {
+  const url = window.location.href;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: name, url });
+      return;
+    }
+  } catch { /* user cancelled */ }
+  try {
+    await navigator.clipboard.writeText(url);
+    toast.success("Link copied to clipboard");
+  } catch {
+    toast.error("Could not copy link");
+  }
+}
 
 export default function EventBracket() {
   const { id } = useParams<{ id: string }>();
@@ -95,30 +125,43 @@ export default function EventBracket() {
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
-        <div>
-          <Badge className="mb-2 bg-accent text-accent-foreground border-0">{event.sport}</Badge>
-          <h1 className="text-3xl sm:text-4xl font-display font-bold">{event.name}</h1>
-          <p className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
-            <span className="flex items-center gap-1.5">
-              <Users className="h-4 w-4" /> {teamCount} teams · {event.status}
-            </span>
-            {live && (
-              <span className="inline-flex items-center gap-1 text-primary text-xs font-medium">
-                <Radio className="h-3 w-3 animate-pulse" /> Live
+        <div className="min-w-0">
+          <Badge className="mb-2 bg-accent text-accent-foreground border-0 capitalize">{event.sport}</Badge>
+          <h1 className="text-3xl sm:text-4xl font-display font-bold break-words">{event.name}</h1>
+          <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            {formatDateRange(event.start_date, event.end_date) && (
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-4 w-4" /> {formatDateRange(event.start_date, event.end_date)}
               </span>
             )}
-          </p>
+            <span className="flex items-center gap-1.5">
+              <Users className="h-4 w-4" /> {teamCount} team{teamCount === 1 ? "" : "s"}
+            </span>
+            <Badge variant="outline" className="capitalize text-xs">
+              {event.status}
+            </Badge>
+            {live && (
+              <span className="inline-flex items-center gap-1 text-primary text-xs font-medium">
+                <Radio className="h-3 w-3 animate-pulse" /> Live updates
+              </span>
+            )}
+          </div>
         </div>
-        {champion && (
-          <Card className="px-5 py-4 bg-gradient-court text-primary-foreground shadow-court flex items-center gap-3">
-            <Trophy className="h-7 w-7" />
-            <div>
-              <div className="text-xs uppercase tracking-wider opacity-80">Champion</div>
-              <div className="font-display font-bold text-lg">{champion.name}</div>
-            </div>
-          </Card>
-        )}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => shareEvent(event.name)}>
+            <Share2 className="h-4 w-4 mr-1" /> Share
+          </Button>
+        </div>
       </div>
+      {champion && (
+        <Card className="px-5 py-4 mb-6 bg-gradient-court text-primary-foreground shadow-court flex items-center gap-3">
+          <Trophy className="h-7 w-7" />
+          <div>
+            <div className="text-xs uppercase tracking-wider opacity-80">Champion</div>
+            <div className="font-display font-bold text-lg">{champion.name}</div>
+          </div>
+        </Card>
+      )}
 
       <Tabs defaultValue="bracket" className="w-full">
         <TabsList className="mb-6">
@@ -144,7 +187,17 @@ export default function EventBracket() {
         </TabsContent>
 
         <TabsContent value="gallery" className="mt-0">
-          <EventGallery eventId={event.id} isAdmin={isAdmin} />
+          <Suspense
+            fallback={
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="aspect-square rounded-md bg-muted animate-pulse" />
+                ))}
+              </div>
+            }
+          >
+            <EventGallery eventId={event.id} isAdmin={isAdmin} />
+          </Suspense>
         </TabsContent>
       </Tabs>
 

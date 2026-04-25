@@ -7,6 +7,8 @@ export interface EventInfo {
   name: string;
   sport: string;
   status: string;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
 export interface MatchRow {
@@ -94,9 +96,12 @@ function MatchCard({
         winner={isCompleted && match.winner_id === match.team_b_id}
       />
       <div className="px-3 py-2 bg-muted/40 border-t border-border flex items-center justify-between gap-2">
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-          Match {match.match_number} {isBye && "· auto-advance"}
-        </span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">
+            Match {match.match_number} {isBye && "· auto-advance"}
+          </span>
+          <StatusPill status={match.status} hasTeams={!!(match.team_a_id && match.team_b_id)} />
+        </div>
         <div className="flex items-center gap-3">
           {onDetailsClick && !isBye && (
             <button
@@ -117,6 +122,28 @@ function MatchCard({
         </div>
       </div>
     </Card>
+  );
+}
+
+function StatusPill({ status, hasTeams }: { status: MatchRow["status"]; hasTeams: boolean }) {
+  const label = status === "completed"
+    ? "Finished"
+    : status === "bye"
+      ? "Bye"
+      : hasTeams
+        ? "Live"
+        : "Pending";
+  const cls = status === "completed"
+    ? "bg-primary/10 text-primary"
+    : status === "bye"
+      ? "bg-muted text-muted-foreground"
+      : hasTeams
+        ? "bg-destructive/10 text-destructive"
+        : "bg-muted text-muted-foreground";
+  return (
+    <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded uppercase tracking-wider", cls)}>
+      {label}
+    </span>
   );
 }
 

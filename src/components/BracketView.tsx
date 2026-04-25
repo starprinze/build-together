@@ -7,6 +7,8 @@ export interface EventInfo {
   name: string;
   sport: string;
   status: string;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
 export interface MatchRow {
@@ -94,9 +96,12 @@ function MatchCard({
         winner={isCompleted && match.winner_id === match.team_b_id}
       />
       <div className="px-3 py-2 bg-muted/40 border-t border-border flex items-center justify-between gap-2">
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-          Match {match.match_number} {isBye && "· auto-advance"}
-        </span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">
+            Match {match.match_number} {isBye && "· auto-advance"}
+          </span>
+          <StatusPill status={match.status} hasTeams={!!(match.team_a_id && match.team_b_id)} />
+        </div>
         <div className="flex items-center gap-3">
           {onDetailsClick && !isBye && (
             <button

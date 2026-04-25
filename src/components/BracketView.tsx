@@ -35,25 +35,27 @@ const roundLabel = (round: number, total: number) => {
 export function BracketView({
   matches,
   onScoreClick,
+  onDetailsClick,
 }: {
   matches: MatchRow[];
   onScoreClick?: (m: MatchRow) => void;
+  onDetailsClick?: (m: MatchRow) => void;
 }) {
   const totalRounds = matches.length ? Math.max(...matches.map((m) => m.round)) : 0;
   const rounds: MatchRow[][] = Array.from({ length: totalRounds }, () => []);
   matches.forEach((m) => rounds[m.round - 1].push(m));
 
   return (
-    <div className="overflow-x-auto pb-4 -mx-4 px-4">
-      <div className="flex gap-6 min-w-fit">
+    <div className="overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory">
+      <div className="flex gap-4 sm:gap-6 min-w-fit">
         {rounds.map((roundMatches, idx) => (
-          <div key={idx} className="flex flex-col min-w-[260px]">
+          <div key={idx} className="flex flex-col min-w-[240px] sm:min-w-[260px] snap-start">
             <div className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground mb-3">
               {roundLabel(idx + 1, totalRounds)}
             </div>
             <div className="flex flex-col justify-around flex-1 gap-3">
               {roundMatches.map((m) => (
-                <MatchCard key={m.id} match={m} onScoreClick={onScoreClick} />
+                <MatchCard key={m.id} match={m} onScoreClick={onScoreClick} onDetailsClick={onDetailsClick} />
               ))}
             </div>
           </div>
@@ -63,7 +65,15 @@ export function BracketView({
   );
 }
 
-function MatchCard({ match, onScoreClick }: { match: MatchRow; onScoreClick?: (m: MatchRow) => void }) {
+function MatchCard({
+  match,
+  onScoreClick,
+  onDetailsClick,
+}: {
+  match: MatchRow;
+  onScoreClick?: (m: MatchRow) => void;
+  onDetailsClick?: (m: MatchRow) => void;
+}) {
   const isBye = match.status === "bye";
   const isCompleted = match.status === "completed";
   const canScore = !!(match.team_a_id && match.team_b_id) && !isCompleted && !isBye;
@@ -83,11 +93,19 @@ function MatchCard({ match, onScoreClick }: { match: MatchRow; onScoreClick?: (m
         score={match.score_b}
         winner={isCompleted && match.winner_id === match.team_b_id}
       />
-      {(isBye || onScoreClick) && (
-        <div className="px-3 py-2 bg-muted/40 border-t border-border flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Match {match.match_number} {isBye && "· auto-advance"}
-          </span>
+      <div className="px-3 py-2 bg-muted/40 border-t border-border flex items-center justify-between gap-2">
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          Match {match.match_number} {isBye && "· auto-advance"}
+        </span>
+        <div className="flex items-center gap-3">
+          {onDetailsClick && !isBye && (
+            <button
+              onClick={() => onDetailsClick(match)}
+              className="text-xs font-medium text-muted-foreground hover:text-primary"
+            >
+              Details
+            </button>
+          )}
           {canScore && onScoreClick && (
             <button
               onClick={() => onScoreClick(match)}
@@ -97,7 +115,7 @@ function MatchCard({ match, onScoreClick }: { match: MatchRow; onScoreClick?: (m
             </button>
           )}
         </div>
-      )}
+      </div>
     </Card>
   );
 }

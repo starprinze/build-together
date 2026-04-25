@@ -1,18 +1,48 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Trophy, Users, Radio } from "lucide-react";
+import { ArrowLeft, Trophy, Users, Radio, Calendar, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BracketView, MatchRow, EventInfo } from "@/components/BracketView";
 import { StandingsTable } from "@/components/StandingsTable";
-import { EventGallery } from "@/components/EventGallery";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchReactions } from "@/components/MatchReactions";
 import { computeStandings } from "@/lib/standings";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+
+const EventGallery = lazy(() =>
+  import("@/components/EventGallery").then((m) => ({ default: m.EventGallery })),
+);
+
+function formatDateRange(start?: string | null, end?: string | null) {
+  if (!start) return null;
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
+  const s = new Date(start).toLocaleDateString(undefined, opts);
+  if (!end || end === start) return s;
+  const e = new Date(end).toLocaleDateString(undefined, opts);
+  return `${s} – ${e}`;
+}
+
+async function shareEvent(name: string) {
+  const url = window.location.href;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: name, url });
+      return;
+    }
+  } catch { /* user cancelled */ }
+  try {
+    await navigator.clipboard.writeText(url);
+    toast.success("Link copied to clipboard");
+  } catch {
+    toast.error("Could not copy link");
+  }
+}
 
 export default function EventBracket() {
   const { id } = useParams<{ id: string }>();

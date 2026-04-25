@@ -162,18 +162,6 @@ export default function EventBracket() {
           </div>
         </Card>
       )}
-      <div className="hidden">
-
-        {champion && (
-          <Card className="px-5 py-4 bg-gradient-court text-primary-foreground shadow-court flex items-center gap-3">
-            <Trophy className="h-7 w-7" />
-            <div>
-              <div className="text-xs uppercase tracking-wider opacity-80">Champion</div>
-              <div className="font-display font-bold text-lg">{champion.name}</div>
-            </div>
-          </Card>
-        )}
-      </div>
 
       <Tabs defaultValue="bracket" className="w-full">
         <TabsList className="mb-6">

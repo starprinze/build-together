@@ -112,6 +112,57 @@ export type Database = {
         }
         Relationships: []
       }
+      match_events: {
+        Row: {
+          body: string
+          created_at: string
+          event_type: string
+          id: string
+          match_id: string
+          minute: number | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          match_id: string
+          minute?: number | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          match_id?: string
+          minute?: number | null
+        }
+        Relationships: []
+      }
+      match_reactions: {
+        Row: {
+          client_id: string
+          created_at: string
+          emoji: string
+          id: string
+          match_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          emoji: string
+          id?: string
+          match_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          match_id?: string
+        }
+        Relationships: []
+      }
       matches: {
         Row: {
           bracket: string

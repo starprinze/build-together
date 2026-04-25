@@ -98,7 +98,7 @@ export default function AdminFixtures() {
     }
   };
 
-  const handleExport = async (kind: "pdf" | "excel") => {
+  const handleExport = async (kind: "pdf" | "excel" | "csv" | "docx") => {
     if (!eventId) return;
     setExporting(true);
     try {
@@ -106,7 +106,6 @@ export default function AdminFixtures() {
         body: { eventId, format: kind },
       });
       if (error) throw error;
-      // Edge function returns base64 so we can trigger a download
       const { filename, mime, data: b64 } = data as { filename: string; mime: string; data: string };
       const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
       const blob = new Blob([bin], { type: mime });
@@ -167,10 +166,16 @@ export default function AdminFixtures() {
               <RotateCcw className="h-4 w-4 mr-1" /> Reset
             </Button>
             <Button variant="outline" onClick={() => handleExport("pdf")} disabled={exporting}>
-              <FileText className="h-4 w-4 mr-1" /> Export PDF
+              <FileText className="h-4 w-4 mr-1" /> PDF
             </Button>
             <Button variant="outline" onClick={() => handleExport("excel")} disabled={exporting}>
-              <FileDown className="h-4 w-4 mr-1" /> Export Excel
+              <FileDown className="h-4 w-4 mr-1" /> Excel
+            </Button>
+            <Button variant="outline" onClick={() => handleExport("csv")} disabled={exporting}>
+              <FileDown className="h-4 w-4 mr-1" /> CSV
+            </Button>
+            <Button variant="outline" onClick={() => handleExport("docx")} disabled={exporting}>
+              <FileText className="h-4 w-4 mr-1" /> DOCX
             </Button>
           </>
         )}

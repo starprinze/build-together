@@ -3,6 +3,7 @@ import { Trophy, LogOut, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export default function Layout() {
   const { user, isAdmin, signOut } = useAuth();
@@ -60,12 +61,13 @@ export default function Layout() {
           </nav>
         </div>
       </header>
-      <main className="flex-1">
+      <main className="flex-1 pb-20 md:pb-0">
         <Outlet />
       </main>
       <footer className="border-t border-border py-6 text-center text-sm text-muted-foreground">
         Built for campus tournaments · Lovable Cloud
       </footer>
+      <MobileBottomNav />
     </div>
   );
 }

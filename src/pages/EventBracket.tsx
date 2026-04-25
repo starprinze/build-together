@@ -187,7 +187,17 @@ export default function EventBracket() {
         </TabsContent>
 
         <TabsContent value="gallery" className="mt-0">
-          <EventGallery eventId={event.id} isAdmin={isAdmin} />
+          <Suspense
+            fallback={
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="aspect-square rounded-md bg-muted animate-pulse" />
+                ))}
+              </div>
+            }
+          >
+            <EventGallery eventId={event.id} isAdmin={isAdmin} />
+          </Suspense>
         </TabsContent>
       </Tabs>
 

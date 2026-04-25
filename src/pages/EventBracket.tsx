@@ -5,9 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BracketView, MatchRow, EventInfo } from "@/components/BracketView";
 import { StandingsTable } from "@/components/StandingsTable";
 import { EventGallery } from "@/components/EventGallery";
+import { MatchTimeline } from "@/components/MatchTimeline";
+import { MatchReactions } from "@/components/MatchReactions";
 import { computeStandings } from "@/lib/standings";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -19,6 +22,7 @@ export default function EventBracket() {
   const [teamCount, setTeamCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [live, setLive] = useState(false);
+  const [openMatch, setOpenMatch] = useState<MatchRow | null>(null);
 
   const loadMatches = useCallback(async () => {
     if (!id) return;
@@ -131,7 +135,7 @@ export default function EventBracket() {
               <p className="text-sm text-muted-foreground">Check back when the tournament begins.</p>
             </Card>
           ) : (
-            <BracketView matches={matches} />
+            <BracketView matches={matches} onScoreClick={(m) => setOpenMatch(m)} />
           )}
         </TabsContent>
 

@@ -125,20 +125,45 @@ export default function EventBracket() {
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
-        <div>
-          <Badge className="mb-2 bg-accent text-accent-foreground border-0">{event.sport}</Badge>
-          <h1 className="text-3xl sm:text-4xl font-display font-bold">{event.name}</h1>
-          <p className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
-            <span className="flex items-center gap-1.5">
-              <Users className="h-4 w-4" /> {teamCount} teams · {event.status}
-            </span>
-            {live && (
-              <span className="inline-flex items-center gap-1 text-primary text-xs font-medium">
-                <Radio className="h-3 w-3 animate-pulse" /> Live
+        <div className="min-w-0">
+          <Badge className="mb-2 bg-accent text-accent-foreground border-0 capitalize">{event.sport}</Badge>
+          <h1 className="text-3xl sm:text-4xl font-display font-bold break-words">{event.name}</h1>
+          <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            {formatDateRange(event.start_date, event.end_date) && (
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-4 w-4" /> {formatDateRange(event.start_date, event.end_date)}
               </span>
             )}
-          </p>
+            <span className="flex items-center gap-1.5">
+              <Users className="h-4 w-4" /> {teamCount} team{teamCount === 1 ? "" : "s"}
+            </span>
+            <Badge variant="outline" className="capitalize text-xs">
+              {event.status}
+            </Badge>
+            {live && (
+              <span className="inline-flex items-center gap-1 text-primary text-xs font-medium">
+                <Radio className="h-3 w-3 animate-pulse" /> Live updates
+              </span>
+            )}
+          </div>
         </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => shareEvent(event.name)}>
+            <Share2 className="h-4 w-4 mr-1" /> Share
+          </Button>
+        </div>
+      </div>
+      {champion && (
+        <Card className="px-5 py-4 mb-6 bg-gradient-court text-primary-foreground shadow-court flex items-center gap-3">
+          <Trophy className="h-7 w-7" />
+          <div>
+            <div className="text-xs uppercase tracking-wider opacity-80">Champion</div>
+            <div className="font-display font-bold text-lg">{champion.name}</div>
+          </div>
+        </Card>
+      )}
+      <div className="hidden">
+
         {champion && (
           <Card className="px-5 py-4 bg-gradient-court text-primary-foreground shadow-court flex items-center gap-3">
             <Trophy className="h-7 w-7" />

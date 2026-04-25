@@ -14,7 +14,7 @@ const corsHeaders = {
 
 interface Body {
   eventId: string;
-  format: "pdf" | "excel";
+  format: "pdf" | "excel" | "csv" | "docx";
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -71,8 +71,8 @@ Deno.serve(async (req) => {
     }
 
     const { eventId, format } = (await req.json()) as Body;
-    if (!eventId || !["pdf", "excel"].includes(format)) {
-      return new Response(JSON.stringify({ error: "eventId and format=pdf|excel required" }), {
+    if (!eventId || !["pdf", "excel", "csv", "docx"].includes(format)) {
+      return new Response(JSON.stringify({ error: "eventId and format=pdf|excel|csv|docx required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

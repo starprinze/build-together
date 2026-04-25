@@ -135,7 +135,7 @@ export default function EventBracket() {
               <p className="text-sm text-muted-foreground">Check back when the tournament begins.</p>
             </Card>
           ) : (
-            <BracketView matches={matches} onScoreClick={(m) => setOpenMatch(m)} />
+            <BracketView matches={matches} onDetailsClick={(m) => setOpenMatch(m)} />
           )}
         </TabsContent>
 
@@ -147,6 +147,37 @@ export default function EventBracket() {
           <EventGallery eventId={event.id} isAdmin={isAdmin} />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!openMatch} onOpenChange={(o) => !o && setOpenMatch(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {openMatch?.team_a?.name ?? "TBD"} vs {openMatch?.team_b?.name ?? "TBD"}
+            </DialogTitle>
+          </DialogHeader>
+          {openMatch && (
+            <div className="space-y-5">
+              <div className="text-center">
+                <div className="font-mono text-3xl font-bold">
+                  {openMatch.score_a ?? "—"} <span className="text-muted-foreground">:</span>{" "}
+                  {openMatch.score_b ?? "—"}
+                </div>
+                <Badge variant="outline" className="mt-2 text-xs capitalize">
+                  {openMatch.status}
+                </Badge>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Reactions</h4>
+                <MatchReactions matchId={openMatch.id} />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Commentary</h4>
+                <MatchTimeline matchId={openMatch.id} isAdmin={isAdmin} />
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

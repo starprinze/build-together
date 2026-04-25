@@ -125,6 +125,28 @@ function MatchCard({
   );
 }
 
+function StatusPill({ status, hasTeams }: { status: MatchRow["status"]; hasTeams: boolean }) {
+  const label = status === "completed"
+    ? "Finished"
+    : status === "bye"
+      ? "Bye"
+      : hasTeams
+        ? "Live"
+        : "Pending";
+  const cls = status === "completed"
+    ? "bg-primary/10 text-primary"
+    : status === "bye"
+      ? "bg-muted text-muted-foreground"
+      : hasTeams
+        ? "bg-destructive/10 text-destructive"
+        : "bg-muted text-muted-foreground";
+  return (
+    <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded uppercase tracking-wider", cls)}>
+      {label}
+    </span>
+  );
+}
+
 function TeamRow({
   name,
   teamId,

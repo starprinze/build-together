@@ -196,6 +196,132 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (format === "csv") {
+      const esc = (v: unknown) => {
+        const s = v == null ? "" : String(v);
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const lines: string[] = [];
+      lines.push(`# ${event.name} (${event.sport}) — ${event.format}`);
+      lines.push("");
+      lines.push("Bracket,Round,Match,TeamA,ScoreA,TeamB,ScoreB,Winner,Status");
+      for (const m of (matches ?? []) as any[]) {
+        lines.push([
+          m.bracket ?? "main",
+          m.round,
+          m.match_number,
+          m.team_a?.name ?? (m.status === "bye" ? "BYE" : "TBD"),
+          m.score_a ?? "",
+          m.team_b?.name ?? (m.status === "bye" ? "BYE" : "TBD"),
+          m.score_b ?? "",
+          m.winner?.name ?? "",
+          m.status,
+        ].map(esc).join(","));
+      }
+      lines.push("");
+      lines.push("Pos,Team,Played,Wins,Losses,PF,PA,Diff,Pts");
+      standings.forEach((s, i) =>
+        lines.push([i + 1, s.name, s.played, s.wins, s.losses, s.pf, s.pa, s.diff, s.points].map(esc).join(",")),
+      );
+      const csv = lines.join("\n");
+      return new Response(
+        JSON.stringify({
+          filename: `${baseName}.csv`,
+          mime: "text/csv",
+          data: bytesToBase64(new TextEncoder().encode(csv)),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    if (format === "docx") {
+      // Minimal valid .docx generated from scratch (no extra deps).
+      const escapeXml = (s: string) =>
+        s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const para = (text: string, opts: { bold?: boolean; size?: number; heading?: boolean } = {}) => {
+        const sz = opts.size ?? 22;
+        const rPr = `<w:rPr>${opts.bold ? "<w:b/>" : ""}<w:sz w:val="${sz}"/></w:rPr>`;
+        return `<w:p>${opts.heading ? '<w:pPr><w:pStyle w:val="Heading1"/></w:pPr>' : ""}<w:r>${rPr}<w:t xml:space="preserve">${escapeXml(text)}</w:t></w:r></w:p>`;
+      };
+      const tableRow = (cells: string[], header = false) => {
+        const tcs = cells
+          .map(
+            (c) =>
+              `<w:tc><w:tcPr><w:tcW w:w="1500" w:type="dxa"/></w:tcPr>${para(c, { bold: header, size: 20 })}</w:tc>`,
+          )
+          .join("");
+        return `<w:tr>${tcs}</w:tr>`;
+      };
+      const tbl = (rows: string[][]) =>
+        `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders><w:top w:val="single" w:sz="4" w:color="CCCCCC"/><w:left w:val="single" w:sz="4" w:color="CCCCCC"/><w:bottom w:val="single" w:sz="4" w:color="CCCCCC"/><w:right w:val="single" w:sz="4" w:color="CCCCCC"/><w:insideH w:val="single" w:sz="4" w:color="CCCCCC"/><w:insideV w:val="single" w:sz="4" w:color="CCCCCC"/></w:tblBorders></w:tblPr>${rows.map((r, i) => tableRow(r, i === 0)).join("")}</w:tbl>`;
+
+      const body =
+        para(event.name, { heading: true, bold: true, size: 36 }) +
+        para(`${event.sport} · ${event.format} · ${event.start_date} → ${event.end_date}`, { size: 20 }) +
+        para("Teams", { bold: true, size: 28 }) +
+        tbl([
+          ["Name", "Department", "Captain"],
+          ...((teams ?? []).map((t: any) => [t.name, t.department, t.captain])),
+        ]) +
+        para("", {}) +
+        para("Fixtures", { bold: true, size: 28 }) +
+        tbl([
+          ["Bracket", "Rd", "#", "Team A", "Score", "Team B", "Winner", "Status"],
+          ...((matches ?? []).map((m: any) => [
+            m.bracket ?? "main",
+            String(m.round),
+            String(m.match_number),
+            m.team_a?.name ?? (m.status === "bye" ? "BYE" : "TBD"),
+            m.score_a != null && m.score_b != null ? `${m.score_a} – ${m.score_b}` : "",
+            m.team_b?.name ?? (m.status === "bye" ? "BYE" : "TBD"),
+            m.winner?.name ?? "",
+            m.status,
+          ])),
+        ]) +
+        para("", {}) +
+        para("Standings", { bold: true, size: 28 }) +
+        tbl([
+          ["#", "Team", "P", "W", "L", "PF", "PA", "Diff", "Pts"],
+          ...standings.map((s, i) => [
+            String(i + 1), s.name, String(s.played), String(s.wins), String(s.losses),
+            String(s.pf), String(s.pa), String(s.diff), String(s.points),
+          ]),
+        ]);
+
+      const documentXml =
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr></w:body></w:document>`;
+
+      const contentTypes =
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+        `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+        `<Default Extension="xml" ContentType="application/xml"/>` +
+        `<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>` +
+        `</Types>`;
+      const rootRels =
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+        `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>` +
+        `</Relationships>`;
+
+      // Build a minimal zip (store-only, no compression) using a tiny inline implementation.
+      const docxBytes = await buildDocxZip([
+        { path: "[Content_Types].xml", data: new TextEncoder().encode(contentTypes) },
+        { path: "_rels/.rels", data: new TextEncoder().encode(rootRels) },
+        { path: "word/document.xml", data: new TextEncoder().encode(documentXml) },
+      ]);
+
+      return new Response(
+        JSON.stringify({
+          filename: `${baseName}.docx`,
+          mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          data: bytesToBase64(docxBytes),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // PDF
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();

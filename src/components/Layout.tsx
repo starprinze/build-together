@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Trophy, LogOut, ShieldCheck } from "lucide-react";
+import { Trophy, LogOut, ShieldCheck, Download } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -12,6 +12,40 @@ export default function Layout() {
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
+  };
+
+  const handleDownloadHtml = () => {
+    // Clone the live document so we can strip interactive-only nodes safely.
+    const docClone = document.documentElement.cloneNode(true) as HTMLElement;
+
+    // Remove script tags — rendered HTML snapshot shouldn't re-execute the app.
+    docClone.querySelectorAll("script").forEach((s) => s.remove());
+
+    // Inline computed stylesheet links by leaving <link rel="stylesheet"> as-is
+    // (they reference absolute URLs once we set <base>). Inject a <base> so
+    // relative asset URLs still resolve when the file is opened standalone.
+    const head = docClone.querySelector("head");
+    if (head && !head.querySelector("base")) {
+      const base = document.createElement("base");
+      base.href = window.location.origin + "/";
+      head.prepend(base);
+    }
+
+    const html = "<!DOCTYPE html>\n" + docClone.outerHTML;
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const slug =
+      (document.title || "page")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "page";
+    a.href = url;
+    a.download = `${slug}-${new Date().toISOString().slice(0, 10)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -49,6 +83,16 @@ export default function Layout() {
               </NavLink>
             )}
             {isAdmin && <NotificationBell />}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDownloadHtml}
+              className="gap-1.5"
+              title="Download current page as HTML"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">HTML</span>
+            </Button>
             {user ? (
               <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1.5">
                 <LogOut className="h-4 w-4" /> Sign out

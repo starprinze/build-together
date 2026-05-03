@@ -16,6 +16,7 @@ interface PhotoRow {
   height: number | null;
   cloudinary_public_id: string | null;
   created_at: string;
+  media_type?: "image" | "video" | null;
 }
 
 const BUCKET = "event-photos";
@@ -23,6 +24,7 @@ const BUCKET = "event-photos";
 function publicUrl(path: string) {
   return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
+
 
 // Render a thumbnail via Supabase image transformation if available; fall back to original.
 function thumbUrl(path: string | null, fallback: string) {

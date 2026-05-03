@@ -155,14 +155,14 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
     <div>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Camera className="h-4 w-4" /> {photos.length} photo{photos.length === 1 ? "" : "s"}
+          <Camera className="h-4 w-4" /> {photos.length} item{photos.length === 1 ? "" : "s"}
         </div>
         {isAdmin && (
           <>
             <input
               ref={fileInput}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               multiple
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
@@ -172,7 +172,7 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
               disabled={uploading}
               className="shadow-court"
             >
-              <Upload className="h-4 w-4 mr-1" /> {uploading ? "Uploading…" : "Upload photos"}
+              <Upload className="h-4 w-4 mr-1" /> {uploading ? "Uploading…" : "Upload media"}
             </Button>
           </>
         )}
@@ -187,39 +187,59 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
       ) : photos.length === 0 ? (
         <Card className="p-12 text-center">
           <Camera className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-          <h3 className="font-display font-semibold mb-1">No photos yet</h3>
+          <h3 className="font-display font-semibold mb-1">No media yet</h3>
           <p className="text-sm text-muted-foreground">
-            {isAdmin ? "Upload tournament photos to share with everyone." : "Check back soon for highlights."}
+            {isAdmin ? "Upload tournament photos and video highlights to share with everyone." : "Check back soon for highlights."}
           </p>
         </Card>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-          {photos.map((p) => (
-            <div key={p.id} className="group relative aspect-square overflow-hidden rounded-md bg-muted">
-              <button
-                onClick={() => setLightbox(p)}
-                className="absolute inset-0 focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <img
-                  src={thumbUrl(p.thumbnail_url, p.url)}
-                  alt={p.caption ?? "Event photo"}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              </button>
-              {isAdmin && (
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-1.5 right-1.5 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => removePhoto(p)}
-                  title="Delete photo"
+          {photos.map((p) => {
+            const isVideo = p.media_type === "video";
+            return (
+              <div key={p.id} className="group relative aspect-square overflow-hidden rounded-md bg-muted">
+                <button
+                  onClick={() => setLightbox(p)}
+                  className="absolute inset-0 focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </div>
-          ))}
+                  {isVideo ? (
+                    <>
+                      <video
+                        src={p.url}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        className="h-full w-full object-cover"
+                      />
+                      <span className="absolute inset-0 grid place-items-center bg-black/20">
+                        <span className="grid place-items-center h-10 w-10 rounded-full bg-background/80 backdrop-blur">
+                          <span className="ml-0.5 border-y-[6px] border-y-transparent border-l-[10px] border-l-foreground" />
+                        </span>
+                      </span>
+                    </>
+                  ) : (
+                    <img
+                      src={thumbUrl(p.thumbnail_url, p.url)}
+                      alt={p.caption ?? "Event photo"}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  )}
+                </button>
+                {isAdmin && (
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1.5 right-1.5 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removePhoto(p)}
+                    title="Delete"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -227,11 +247,21 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
         <DialogContent className="max-w-5xl p-0 overflow-hidden bg-background border-0">
           {lightbox && (
             <div className="relative">
-              <img
-                src={lightbox.url}
-                alt={lightbox.caption ?? "Event photo"}
-                className="w-full h-auto max-h-[85vh] object-contain bg-black"
-              />
+              {lightbox.media_type === "video" ? (
+                <video
+                  src={lightbox.url}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="w-full h-auto max-h-[85vh] bg-black"
+                />
+              ) : (
+                <img
+                  src={lightbox.url}
+                  alt={lightbox.caption ?? "Event photo"}
+                  className="w-full h-auto max-h-[85vh] object-contain bg-black"
+                />
+              )}
               <button
                 onClick={() => setLightbox(null)}
                 className="absolute top-3 right-3 grid place-items-center h-9 w-9 rounded-full bg-background/80 hover:bg-background backdrop-blur"

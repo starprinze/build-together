@@ -40,6 +40,7 @@ export type Database = {
           event_id: string
           height: number | null
           id: string
+          media_type: string
           thumbnail_url: string | null
           uploaded_by: string | null
           url: string
@@ -52,6 +53,7 @@ export type Database = {
           event_id: string
           height?: number | null
           id?: string
+          media_type?: string
           thumbnail_url?: string | null
           uploaded_by?: string | null
           url: string
@@ -64,6 +66,7 @@ export type Database = {
           event_id?: string
           height?: number | null
           id?: string
+          media_type?: string
           thumbnail_url?: string | null
           uploaded_by?: string | null
           url?: string

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -28,6 +29,8 @@ export default function AdminFixtures() {
   const [exporting, setExporting] = useState(false);
   const [aiBusy, setAiBusy] = useState<string | null>(null);
   const [summaryView, setSummaryView] = useState<MatchRow | null>(null);
+  const [summaryDraft, setSummaryDraft] = useState("");
+  const [savingSummary, setSavingSummary] = useState(false);
 
   useEffect(() => {
     supabase.from("events").select("id,name,format").order("created_at", { ascending: false }).then(({ data }) => {
@@ -208,14 +211,16 @@ export default function AdminFixtures() {
                         {" – "}
                         <span className="font-mono text-muted-foreground">{m.score_b}</span> {m.team_b?.name}
                       </div>
-                      {(m as any).summary && (
-                        <button
-                          className="text-xs text-primary hover:underline"
-                          onClick={() => setSummaryView(m)}
-                        >
-                          View recap
-                        </button>
-                      )}
+                      <button
+                        className="text-xs text-primary hover:underline"
+                        onClick={() => {
+                          setSummaryView(m);
+                          setSummaryDraft((m as any).summary ?? "");
+                        }}
+                      >
+                        {(m as any).summary ? "View / edit recap" : "Write recap"}
+                      </button>
+
                     </div>
                     <Button
                       size="sm"
@@ -269,9 +274,58 @@ export default function AdminFixtures() {
               </DialogDescription>
             )}
           </DialogHeader>
-          <p className="text-sm whitespace-pre-wrap">{(summaryView as any)?.summary}</p>
+          <Textarea
+            value={summaryDraft}
+            onChange={(e) => setSummaryDraft(e.target.value)}
+            placeholder="Write a recap of the match — key plays, MVP, turning points…"
+            rows={8}
+          />
+          <DialogFooter className="gap-2">
+            {summaryView && (summaryView as any).summary && (
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  if (!summaryView) return;
+                  if (!confirm("Clear the saved recap?")) return;
+                  setSavingSummary(true);
+                  const { error } = await supabase
+                    .from("matches")
+                    .update({ summary: null })
+                    .eq("id", summaryView.id);
+                  setSavingSummary(false);
+                  if (error) return toast.error(error.message);
+                  toast.success("Recap cleared");
+                  setSummaryView(null);
+                  setSummaryDraft("");
+                  load();
+                }}
+              >
+                Clear
+              </Button>
+            )}
+            <Button
+              disabled={savingSummary}
+              onClick={async () => {
+                if (!summaryView) return;
+                setSavingSummary(true);
+                const { error } = await supabase
+                  .from("matches")
+                  .update({ summary: summaryDraft.trim() || null })
+                  .eq("id", summaryView.id);
+                setSavingSummary(false);
+                if (error) return toast.error(error.message);
+                toast.success("Recap saved");
+                setSummaryView(null);
+                load();
+              }}
+              className="shadow-court"
+            >
+              {savingSummary ? "Saving…" : "Save recap"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

@@ -95,31 +95,35 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
     let failed = 0;
     for (const file of Array.from(files)) {
       try {
-        const blob = await downscaleToBlob(file, 2000);
-        const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+        const isVideo = file.type.startsWith("video/");
+        const blob = isVideo ? file : await downscaleToBlob(file, 2000);
+        const ext = (file.name.split(".").pop() || (isVideo ? "mp4" : "jpg")).toLowerCase();
         const path = `${eventId}/${crypto.randomUUID()}.${ext}`;
         const { error: upErr } = await supabase.storage
           .from(BUCKET)
           .upload(path, blob, { contentType: blob.type || file.type, upsert: false });
         if (upErr) throw upErr;
 
-        // Get dimensions for nicer layout (best effort)
+        // Get dimensions for nicer layout (best effort, images only)
         let width: number | null = null;
         let height: number | null = null;
-        try {
-          const bm = await createImageBitmap(blob);
-          width = bm.width;
-          height = bm.height;
-        } catch { /* ignore */ }
+        if (!isVideo) {
+          try {
+            const bm = await createImageBitmap(blob);
+            width = bm.width;
+            height = bm.height;
+          } catch { /* ignore */ }
+        }
 
         const { error: insErr } = await supabase.from("event_photos").insert({
           event_id: eventId,
           url: publicUrl(path),
-          thumbnail_url: path, // store path; we transform on render
+          thumbnail_url: isVideo ? null : path,
           width,
           height,
           cloudinary_public_id: null,
-        });
+          media_type: isVideo ? "video" : "image",
+        } as any);
         if (insErr) throw insErr;
         ok++;
       } catch (err: any) {

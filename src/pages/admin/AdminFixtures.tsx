@@ -210,14 +210,16 @@ export default function AdminFixtures() {
                         {" – "}
                         <span className="font-mono text-muted-foreground">{m.score_b}</span> {m.team_b?.name}
                       </div>
-                      {(m as any).summary && (
-                        <button
-                          className="text-xs text-primary hover:underline"
-                          onClick={() => setSummaryView(m)}
-                        >
-                          View recap
-                        </button>
-                      )}
+                      <button
+                        className="text-xs text-primary hover:underline"
+                        onClick={() => {
+                          setSummaryView(m);
+                          setSummaryDraft((m as any).summary ?? "");
+                        }}
+                      >
+                        {(m as any).summary ? "View / edit recap" : "Write recap"}
+                      </button>
+
                     </div>
                     <Button
                       size="sm"

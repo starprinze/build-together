@@ -28,6 +28,8 @@ export default function AdminFixtures() {
   const [exporting, setExporting] = useState(false);
   const [aiBusy, setAiBusy] = useState<string | null>(null);
   const [summaryView, setSummaryView] = useState<MatchRow | null>(null);
+  const [summaryDraft, setSummaryDraft] = useState("");
+  const [savingSummary, setSavingSummary] = useState(false);
 
   useEffect(() => {
     supabase.from("events").select("id,name,format").order("created_at", { ascending: false }).then(({ data }) => {

@@ -273,9 +273,58 @@ export default function AdminFixtures() {
               </DialogDescription>
             )}
           </DialogHeader>
-          <p className="text-sm whitespace-pre-wrap">{(summaryView as any)?.summary}</p>
+          <Textarea
+            value={summaryDraft}
+            onChange={(e) => setSummaryDraft(e.target.value)}
+            placeholder="Write a recap of the match — key plays, MVP, turning points…"
+            rows={8}
+          />
+          <DialogFooter className="gap-2">
+            {summaryView && (summaryView as any).summary && (
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  if (!summaryView) return;
+                  if (!confirm("Clear the saved recap?")) return;
+                  setSavingSummary(true);
+                  const { error } = await supabase
+                    .from("matches")
+                    .update({ summary: null })
+                    .eq("id", summaryView.id);
+                  setSavingSummary(false);
+                  if (error) return toast.error(error.message);
+                  toast.success("Recap cleared");
+                  setSummaryView(null);
+                  setSummaryDraft("");
+                  load();
+                }}
+              >
+                Clear
+              </Button>
+            )}
+            <Button
+              disabled={savingSummary}
+              onClick={async () => {
+                if (!summaryView) return;
+                setSavingSummary(true);
+                const { error } = await supabase
+                  .from("matches")
+                  .update({ summary: summaryDraft.trim() || null })
+                  .eq("id", summaryView.id);
+                setSavingSummary(false);
+                if (error) return toast.error(error.message);
+                toast.success("Recap saved");
+                setSummaryView(null);
+                load();
+              }}
+              className="shadow-court"
+            >
+              {savingSummary ? "Saving…" : "Save recap"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

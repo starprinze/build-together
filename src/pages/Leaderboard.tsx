@@ -25,7 +25,7 @@ export default function Leaderboard() {
       .order("total_points", { ascending: false })
       .limit(100)
       .then(({ data }) => {
-        setRows((data as Row[]) ?? []);
+        setRows((data as unknown as Row[]) ?? []);
         setLoading(false);
       });
   }, []);

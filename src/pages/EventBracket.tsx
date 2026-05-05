@@ -11,6 +11,7 @@ import { BracketView, MatchRow, EventInfo } from "@/components/BracketView";
 import { StandingsTable } from "@/components/StandingsTable";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchReactions } from "@/components/MatchReactions";
+import { MatchPrediction } from "@/components/MatchPrediction";
 import { computeStandings } from "@/lib/standings";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -218,6 +219,17 @@ export default function EventBracket() {
                 <Badge variant="outline" className="mt-2 text-xs capitalize">
                   {openMatch.status}
                 </Badge>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Your prediction</h4>
+                <MatchPrediction
+                  matchId={openMatch.id}
+                  teamAName={openMatch.team_a?.name ?? "Team A"}
+                  teamBName={openMatch.team_b?.name ?? "Team B"}
+                  predictionDeadline={openMatch.prediction_deadline ?? null}
+                  result={openMatch.result ?? null}
+                  status={openMatch.status}
+                />
               </div>
               <div>
                 <h4 className="text-sm font-semibold mb-2">Reactions</h4>

@@ -1,4 +1,4 @@
-import { Home, Trophy, ShieldCheck, LogIn } from "lucide-react";
+import { Home, Award, ShieldCheck, LogIn, User as UserIcon } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -19,11 +19,11 @@ export function MobileBottomNav() {
     >
       <div className="grid grid-cols-3">
         <NavItem to="/" end icon={Home} label="Events" />
-        <NavItem to="/events" icon={Trophy} label="Live" disabledHint />
+        <NavItem to="/leaderboard" icon={Award} label="Ranks" />
         {isAdmin ? (
           <NavItem to="/admin" icon={ShieldCheck} label="Admin" />
         ) : user ? (
-          <NavItem to="/login" icon={LogIn} label="Account" />
+          <NavItem to="/profile" icon={UserIcon} label="Profile" />
         ) : (
           <NavItem to="/login" icon={LogIn} label="Sign in" />
         )}

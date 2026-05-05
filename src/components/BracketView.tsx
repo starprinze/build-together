@@ -21,6 +21,8 @@ export interface MatchRow {
   score_b: number | null;
   winner_id: string | null;
   status: "pending" | "completed" | "bye";
+  prediction_deadline?: string | null;
+  result?: "team_a" | "team_b" | "draw" | null;
   team_a: { id: string; name: string; department?: string } | null;
   team_b: { id: string; name: string; department?: string } | null;
   winner: { id: string; name: string } | null;

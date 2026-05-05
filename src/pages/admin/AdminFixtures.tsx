@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Sparkles, RotateCcw, FileDown, FileText, Wand2 } from "lucide-react";
+import { Sparkles, RotateCcw, FileDown, FileText, Wand2, Clock } from "lucide-react";
 import { generateFixtures, resetFixtures, submitScore, type FixtureFormat } from "@/lib/bracket";
 import { BracketView, MatchRow } from "@/components/BracketView";
 import {
@@ -198,6 +198,25 @@ export default function AdminFixtures() {
           )}
           <BracketView matches={matches} onScoreClick={openScore} />
 
+          {/* Prediction deadlines for upcoming matches */}
+          {matches.some((m) => m.status === "pending" && m.team_a_id && m.team_b_id) && (
+            <Card className="p-4 mt-6 shadow-card">
+              <h2 className="text-lg font-display font-semibold mb-1 flex items-center gap-2">
+                <Clock className="h-4 w-4" /> Prediction deadlines
+              </h2>
+              <p className="text-xs text-muted-foreground mb-3">
+                Set when predictions close for each upcoming match. Leave empty to allow predictions until the score is recorded.
+              </p>
+              <div className="space-y-2">
+                {matches
+                  .filter((m) => m.status === "pending" && m.team_a_id && m.team_b_id)
+                  .map((m) => (
+                    <DeadlineRow key={m.id} match={m} onSaved={load} />
+                  ))}
+              </div>
+            </Card>
+          )}
+
           {/* Per-match AI summary list for completed matches */}
           {matches.some((m) => m.status === "completed") && (
             <Card className="p-4 mt-6 shadow-card">
@@ -326,6 +345,50 @@ export default function AdminFixtures() {
         </DialogContent>
       </Dialog>
 
+    </div>
+  );
+}
+
+function toLocalInput(iso: string | null | undefined) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const tz = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - tz).toISOString().slice(0, 16);
+}
+
+function DeadlineRow({ match, onSaved }: { match: MatchRow; onSaved: () => void }) {
+  const [value, setValue] = useState<string>(toLocalInput((match as any).prediction_deadline));
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    const iso = value ? new Date(value).toISOString() : null;
+    const { error } = await supabase
+      .from("matches")
+      .update({ prediction_deadline: iso })
+      .eq("id", match.id);
+    setSaving(false);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Deadline saved");
+      onSaved();
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap py-2 border-b border-border last:border-0">
+      <div className="text-sm flex-1 min-w-[180px] truncate">
+        {match.team_a?.name} <span className="text-muted-foreground">vs</span> {match.team_b?.name}
+      </div>
+      <Input
+        type="datetime-local"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="h-9 w-auto text-sm"
+      />
+      <Button size="sm" variant="outline" onClick={save} disabled={saving}>
+        {saving ? "Saving…" : "Save"}
+      </Button>
     </div>
   );
 }

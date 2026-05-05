@@ -173,6 +173,8 @@ export type Database = {
           event_id: string
           id: string
           match_number: number
+          prediction_deadline: string | null
+          result: string | null
           round: number
           score_a: number | null
           score_b: number | null
@@ -188,6 +190,8 @@ export type Database = {
           event_id: string
           id?: string
           match_number: number
+          prediction_deadline?: string | null
+          result?: string | null
           round: number
           score_a?: number | null
           score_b?: number | null
@@ -203,6 +207,8 @@ export type Database = {
           event_id?: string
           id?: string
           match_number?: number
+          prediction_deadline?: string | null
+          result?: string | null
           round?: number
           score_a?: number | null
           score_b?: number | null
@@ -301,6 +307,97 @@ export type Database = {
           },
         ]
       }
+      points: {
+        Row: {
+          created_at: string
+          id: string
+          match_id: string
+          points: number
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_id: string
+          points?: number
+          reason?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_id?: string
+          points?: number
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predictions: {
+        Row: {
+          created_at: string
+          id: string
+          match_id: string
+          prediction: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_id: string
+          prediction: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_id?: string
+          prediction?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       teams: {
         Row: {
           captain: string
@@ -365,10 +462,19 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard: {
+        Row: {
+          correct_predictions: number | null
+          total_points: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_exists: { Args: never; Returns: boolean }
+      can_predict: { Args: { _match_id: string }; Returns: boolean }
       claim_first_admin: { Args: never; Returns: boolean }
       has_role: {
         Args: {

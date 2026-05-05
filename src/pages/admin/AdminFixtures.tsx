@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Sparkles, RotateCcw, FileDown, FileText, Wand2 } from "lucide-react";
+import { Sparkles, RotateCcw, FileDown, FileText, Wand2, Clock } from "lucide-react";
 import { generateFixtures, resetFixtures, submitScore, type FixtureFormat } from "@/lib/bracket";
 import { BracketView, MatchRow } from "@/components/BracketView";
 import {
@@ -197,6 +197,25 @@ export default function AdminFixtures() {
             </Card>
           )}
           <BracketView matches={matches} onScoreClick={openScore} />
+
+          {/* Prediction deadlines for upcoming matches */}
+          {matches.some((m) => m.status === "pending" && m.team_a_id && m.team_b_id) && (
+            <Card className="p-4 mt-6 shadow-card">
+              <h2 className="text-lg font-display font-semibold mb-1 flex items-center gap-2">
+                <Clock className="h-4 w-4" /> Prediction deadlines
+              </h2>
+              <p className="text-xs text-muted-foreground mb-3">
+                Set when predictions close for each upcoming match. Leave empty to allow predictions until the score is recorded.
+              </p>
+              <div className="space-y-2">
+                {matches
+                  .filter((m) => m.status === "pending" && m.team_a_id && m.team_b_id)
+                  .map((m) => (
+                    <DeadlineRow key={m.id} match={m} onSaved={load} />
+                  ))}
+              </div>
+            </Card>
+          )}
 
           {/* Per-match AI summary list for completed matches */}
           {matches.some((m) => m.status === "completed") && (

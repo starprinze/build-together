@@ -348,3 +348,47 @@ export default function AdminFixtures() {
     </div>
   );
 }
+
+function toLocalInput(iso: string | null | undefined) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const tz = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - tz).toISOString().slice(0, 16);
+}
+
+function DeadlineRow({ match, onSaved }: { match: MatchRow; onSaved: () => void }) {
+  const [value, setValue] = useState<string>(toLocalInput((match as any).prediction_deadline));
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    const iso = value ? new Date(value).toISOString() : null;
+    const { error } = await supabase
+      .from("matches")
+      .update({ prediction_deadline: iso })
+      .eq("id", match.id);
+    setSaving(false);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Deadline saved");
+      onSaved();
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap py-2 border-b border-border last:border-0">
+      <div className="text-sm flex-1 min-w-[180px] truncate">
+        {match.team_a?.name} <span className="text-muted-foreground">vs</span> {match.team_b?.name}
+      </div>
+      <Input
+        type="datetime-local"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="h-9 w-auto text-sm"
+      />
+      <Button size="sm" variant="outline" onClick={save} disabled={saving}>
+        {saving ? "Saving…" : "Save"}
+      </Button>
+    </div>
+  );
+}

@@ -221,6 +221,17 @@ export default function EventBracket() {
                 </Badge>
               </div>
               <div>
+                <h4 className="text-sm font-semibold mb-2">Your prediction</h4>
+                <MatchPrediction
+                  matchId={openMatch.id}
+                  teamAName={openMatch.team_a?.name ?? "Team A"}
+                  teamBName={openMatch.team_b?.name ?? "Team B"}
+                  predictionDeadline={openMatch.prediction_deadline ?? null}
+                  result={openMatch.result ?? null}
+                  status={openMatch.status}
+                />
+              </div>
+              <div>
                 <h4 className="text-sm font-semibold mb-2">Reactions</h4>
                 <MatchReactions matchId={openMatch.id} />
               </div>

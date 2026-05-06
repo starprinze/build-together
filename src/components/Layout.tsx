@@ -1,12 +1,14 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Trophy, LogOut, ShieldCheck, Download, Award, User as UserIcon } from "lucide-react";
+import { Trophy, LogOut, ShieldCheck, Download, Award, User as UserIcon, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export default function Layout() {
   const { user, isAdmin, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -107,9 +109,18 @@ export default function Layout() {
             {isAdmin && <NotificationBell />}
             <Button
               variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="ghost"
               size="sm"
               onClick={handleDownloadHtml}
-              className="gap-1.5"
+              className="gap-1.5 hidden sm:inline-flex"
               title="Download current page as HTML"
             >
               <Download className="h-4 w-4" />

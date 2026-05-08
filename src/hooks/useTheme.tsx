@@ -20,7 +20,7 @@ function getInitialTheme(): Theme {
   } catch {
     /* ignore */
   }
-  return "light";
+  return "dark";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

@@ -52,7 +52,7 @@ export default function Index() {
           .select(
             "id,event_id,match_number,round,status,score_a,score_b,team_a:team_a_id(name),team_b:team_b_id(name)",
           )
-          .in("status", ["live", "pending"])
+          .in("status", ["pending"])
           .order("created_at", { ascending: false })
           .limit(6),
       ]);

@@ -192,7 +192,7 @@ export default function Index() {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {matches.map((m) => {
-              const isLive = m.status === "live";
+              const isLive = m.status === "pending" && (m.score_a !== null || m.score_b !== null);
               return (
                 <Link key={m.id} to={`/events/${m.event_id}`} className="group">
                   <Card

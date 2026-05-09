@@ -23,6 +23,10 @@ export default function Login() {
   const redirectTo = searchParams.get("redirect") || "/profile";
   const adminMode = searchParams.get("admin") === "1" || location.pathname === "/admin/login";
 
+  useEffect(() => {
+    setMode(searchParams.get("mode") === "signup" ? "signup" : "signin");
+  }, [searchParams]);
+
   const refreshAdminExists = async () => {
     const { data, error } = await supabase.rpc("admin_exists");
     if (!error) setAdminExists(!!data);
@@ -41,10 +45,23 @@ export default function Login() {
         if (error) throw error;
         toast.success("Signed in");
         if (adminMode) {
-          await refreshRole();
-          if (isAdmin) {
-            navigate("/admin", { replace: true });
-            return;
+          const {
+            data: { user: signedInUser },
+          } = await supabase.auth.getUser();
+
+          if (signedInUser) {
+            const { data: role } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", signedInUser.id)
+              .eq("role", "admin")
+              .maybeSingle();
+
+            if (role) {
+              await refreshRole();
+              navigate("/admin/dashboard", { replace: true });
+              return;
+            }
           }
 
           const { data } = await supabase.rpc("admin_exists");
@@ -84,7 +101,7 @@ export default function Login() {
       if (data === true) {
         await refreshRole();
         toast.success("You are now the first admin");
-        navigate("/admin");
+        navigate("/admin/dashboard");
       } else {
         toast.info("An admin already exists. Ask them to grant you access.");
         await refreshAdminExists();

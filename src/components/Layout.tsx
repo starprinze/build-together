@@ -39,6 +39,16 @@ export default function Layout() {
               Events
             </NavLink>
             <NavLink
+              to="/about"
+              className={({ isActive }) =>
+                `px-3 py-2 text-sm font-medium rounded-md transition-colors hidden sm:inline-block ${
+                  isActive ? "text-primary bg-accent" : "text-muted-foreground hover:text-foreground"
+                }`
+              }
+            >
+              About
+            </NavLink>
+            <NavLink
               to="/leaderboard"
               className={({ isActive }) =>
                 `px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${

@@ -8,7 +8,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
       <div className="container py-20 text-center text-muted-foreground">Loading…</div>
     );
   }
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/admin/login" replace />;
   if (!isAdmin) {
     return (
       <div className="container py-20 text-center">

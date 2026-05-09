@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Trophy, LogOut, ShieldCheck, Download, Award, User as UserIcon, Sun, Moon } from "lucide-react";
+import { Trophy, LogOut, ShieldCheck, Award, User as UserIcon, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";

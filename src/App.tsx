@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +10,10 @@ import AdminGuard from "@/components/AdminGuard";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import EventBracket from "./pages/EventBracket";
+import Matches from "./pages/Matches";
+import Predictions from "./pages/Predictions";
+import Fixtures from "./pages/Fixtures";
+import Gallery from "./pages/Gallery";
 import TeamProfile from "./pages/TeamProfile";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
@@ -32,32 +36,43 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route path="/" element={<Index />} />
+            <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/events/:id" element={<EventBracket />} />
-              <Route path="/teams/:id" element={<TeamProfile />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/about" element={<About />} />
+              <Route path="/admin/login" element={<Login />} />
+
+              <Route element={<Layout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/matches" element={<Matches />} />
+                <Route path="/predictions" element={<Predictions />} />
+                <Route path="/fixtures" element={<Fixtures />} />
+                <Route path="/gallery" element={<Gallery />} />
+                <Route path="/events/:id" element={<EventBracket />} />
+                <Route path="/teams/:id" element={<TeamProfile />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+
               <Route
+                path="/admin"
                 element={
                   <AdminGuard>
                     <AdminLayout />
                   </AdminGuard>
                 }
               >
-                <Route path="/admin" element={<AdminEvents />} />
-                <Route path="/admin/teams" element={<AdminTeams />} />
-                <Route path="/admin/fixtures" element={<AdminFixtures />} />
-                <Route path="/admin/users" element={<AdminUsers />} />
-                <Route path="/admin/notifications" element={<AdminNotifications />} />
-                <Route path="/admin/settings" element={<AdminSettings />} />
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<AdminEvents />} />
+                <Route path="events" element={<AdminEvents />} />
+                <Route path="teams" element={<AdminTeams />} />
+                <Route path="matches" element={<AdminFixtures />} />
+                <Route path="fixtures" element={<AdminFixtures />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="notifications" element={<AdminNotifications />} />
+                <Route path="settings" element={<AdminSettings />} />
               </Route>
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
+            </Routes>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

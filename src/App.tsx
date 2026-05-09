@@ -13,6 +13,7 @@ import EventBracket from "./pages/EventBracket";
 import TeamProfile from "./pages/TeamProfile";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
+import About from "./pages/About";
 import AdminEvents, { AdminLayout } from "./pages/admin/AdminEvents";
 import AdminTeams from "./pages/admin/AdminTeams";
 import AdminFixtures from "./pages/admin/AdminFixtures";
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/teams/:id" element={<TeamProfile />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/about" element={<About />} />
               <Route
                 element={
                   <AdminGuard>

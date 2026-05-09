@@ -16,40 +16,6 @@ export default function Layout() {
     navigate("/");
   };
 
-  const handleDownloadHtml = () => {
-    // Clone the live document so we can strip interactive-only nodes safely.
-    const docClone = document.documentElement.cloneNode(true) as HTMLElement;
-
-    // Remove script tags — rendered HTML snapshot shouldn't re-execute the app.
-    docClone.querySelectorAll("script").forEach((s) => s.remove());
-
-    // Inline computed stylesheet links by leaving <link rel="stylesheet"> as-is
-    // (they reference absolute URLs once we set <base>). Inject a <base> so
-    // relative asset URLs still resolve when the file is opened standalone.
-    const head = docClone.querySelector("head");
-    if (head && !head.querySelector("base")) {
-      const base = document.createElement("base");
-      base.href = window.location.origin + "/";
-      head.prepend(base);
-    }
-
-    const html = "<!DOCTYPE html>\n" + docClone.outerHTML;
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    const slug =
-      (document.title || "page")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "") || "page";
-    a.href = url;
-    a.download = `${slug}-${new Date().toISOString().slice(0, 10)}.html`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-40">

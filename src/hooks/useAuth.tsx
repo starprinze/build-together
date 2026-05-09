@@ -32,12 +32,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAdmin(false);
       return;
     }
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", uid)
       .eq("role", "admin")
       .maybeSingle();
+    if (error) {
+      setIsAdmin(false);
+      return;
+    }
     setIsAdmin(!!data);
   }, []);
 
@@ -45,28 +49,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchRole(userIdRef.current);
   }, [fetchRole]);
 
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
+  const applySession = useCallback(
+    async (sess: Session | null) => {
       setSession(sess);
       setUser(sess?.user ?? null);
       userIdRef.current = sess?.user?.id ?? null;
-      if (sess?.user) {
-        setTimeout(() => fetchRole(sess.user.id), 0);
-      } else {
+
+      if (!sess?.user) {
         setIsAdmin(false);
+        setLoading(false);
+        return;
       }
+
+      setLoading(true);
+      await fetchRole(sess.user.id);
+      setLoading(false);
+    },
+    [fetchRole],
+  );
+
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
+      setTimeout(() => {
+        void applySession(sess);
+      }, 0);
     });
 
-    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      userIdRef.current = s?.user?.id ?? null;
-      if (s?.user) await fetchRole(s.user.id);
-      setLoading(false);
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      void applySession(s);
     });
 
     return () => sub.subscription.unsubscribe();
-  }, [fetchRole]);
+  }, [applySession]);
 
   const signOut = async () => {
     await supabase.auth.signOut();

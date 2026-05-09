@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAdmin, refreshRole } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -18,6 +19,13 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [adminExists, setAdminExists] = useState<boolean | null>(null);
   const [claiming, setClaiming] = useState(false);
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const redirectTo = searchParams.get("redirect") || "/profile";
+  const adminMode = searchParams.get("admin") === "1" || location.pathname === "/admin/login";
+
+  useEffect(() => {
+    setMode(searchParams.get("mode") === "signup" ? "signup" : "signin");
+  }, [searchParams]);
 
   const refreshAdminExists = async () => {
     const { data, error } = await supabase.rpc("admin_exists");
@@ -36,15 +44,43 @@ export default function Login() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Signed in");
-        // Re-check before redirect — if no admin yet, stay so user can claim.
-        const { data } = await supabase.rpc("admin_exists");
-        if (data) navigate("/admin");
-        else setAdminExists(false);
+        if (adminMode) {
+          const {
+            data: { user: signedInUser },
+          } = await supabase.auth.getUser();
+
+          if (signedInUser) {
+            const { data: role } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", signedInUser.id)
+              .eq("role", "admin")
+              .maybeSingle();
+
+            if (role) {
+              await refreshRole();
+              navigate("/admin/dashboard", { replace: true });
+              return;
+            }
+          }
+
+          const { data } = await supabase.rpc("admin_exists");
+          if (!data) {
+            setAdminExists(false);
+            return;
+          }
+
+          toast.error("This account does not have organizer access.");
+          navigate(redirectTo, { replace: true });
+          return;
+        }
+
+        navigate(redirectTo, { replace: true });
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/admin` },
+          options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
         toast.success("Account created. You can sign in now.");
@@ -65,7 +101,7 @@ export default function Login() {
       if (data === true) {
         await refreshRole();
         toast.success("You are now the first admin");
-        navigate("/admin");
+        navigate("/admin/dashboard");
       } else {
         toast.info("An admin already exists. Ask them to grant you access.");
         await refreshAdminExists();
@@ -107,14 +143,24 @@ export default function Login() {
 
       <Card className="p-8 shadow-elevated">
         <h1 className="text-2xl font-display font-bold mb-1">
-          {mode === "signin" ? "Admin sign in" : "Create admin account"}
+          {mode === "signin"
+            ? adminMode
+              ? "Organizer sign in"
+              : "Sign in to Sportified"
+            : adminMode
+              ? "Create organizer account"
+              : "Create your Sportified account"}
         </h1>
         <p className="text-sm text-muted-foreground mb-6">
           {mode === "signin"
-            ? "Sign in to manage events, teams and fixtures."
-            : adminExists === false
-            ? "After signing up, sign in and claim the first admin role."
-            : "After signing up, ask an existing admin to grant you the admin role."}
+            ? adminMode
+              ? "Sign in with an organizer-approved account to manage events, teams, and fixtures."
+              : "Sign in to make predictions, track your history, and climb the leaderboard."
+            : adminMode
+              ? adminExists === false
+                ? "After signing up, sign in and claim the first organizer role."
+                : "After signing up, ask an existing organizer to grant you access."
+              : "Create an account to start predicting and compete for points."}
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

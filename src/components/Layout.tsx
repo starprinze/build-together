@@ -1,15 +1,27 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Trophy, LogOut, ShieldCheck, Award, User as UserIcon, Sun, Moon } from "lucide-react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Trophy, LogOut, Award, User as UserIcon, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
-import { NotificationBell } from "@/components/NotificationBell";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export default function Layout() {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const publicLinks = [
+    { to: "/", label: "Home" },
+    { to: "/matches", label: "Matches" },
+    { to: "/predictions", label: "Predictions" },
+    { to: "/fixtures", label: "Fixtures" },
+    { to: "/leaderboard", label: "Leaderboard" },
+    { to: "/gallery", label: "Gallery" },
+    { to: "/about", label: "About" },
+  ];
+
+  const authRedirect = encodeURIComponent(`${location.pathname}${location.search}${location.hash}`);
 
   const handleSignOut = async () => {
     await signOut();
@@ -19,70 +31,31 @@ export default function Layout() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-40">
-        <div className="container flex items-center justify-between h-16">
+        <div className="container flex items-center justify-between gap-3 h-16">
           <Link to="/" className="flex items-center gap-2 font-display font-bold text-lg">
             <span className="grid place-items-center h-9 w-9 rounded-lg bg-gradient-court text-primary-foreground shadow-court">
               <Trophy className="h-5 w-5" />
             </span>
-            <span>Campus Sports</span>
+            <span>Sportified</span>
           </Link>
-          <nav className="flex items-center gap-1 sm:gap-2">
-            <NavLink
-              to="/"
-              end
-              className={({ isActive }) =>
-                `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  isActive ? "text-primary bg-accent" : "text-muted-foreground hover:text-foreground"
-                }`
-              }
-            >
-              Events
-            </NavLink>
-            <NavLink
-              to="/about"
-              className={({ isActive }) =>
-                `px-3 py-2 text-sm font-medium rounded-md transition-colors hidden sm:inline-block ${
-                  isActive ? "text-primary bg-accent" : "text-muted-foreground hover:text-foreground"
-                }`
-              }
-            >
-              About
-            </NavLink>
-            <NavLink
-              to="/leaderboard"
-              className={({ isActive }) =>
-                `px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${
-                  isActive ? "text-primary bg-accent" : "text-muted-foreground hover:text-foreground"
-                }`
-              }
-            >
-              <Award className="h-4 w-4" /> <span className="hidden sm:inline">Leaderboard</span>
-            </NavLink>
-            {user && !isAdmin && (
+          <nav className="hidden md:flex items-center gap-1">
+            {publicLinks.map(({ to, label }) => (
               <NavLink
-                to="/profile"
+                key={to}
+                to={to}
+                end={to === "/"}
                 className={({ isActive }) =>
-                  `px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${
+                  `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     isActive ? "text-primary bg-accent" : "text-muted-foreground hover:text-foreground"
                   }`
                 }
               >
-                <UserIcon className="h-4 w-4" /> <span className="hidden sm:inline">Profile</span>
+                {label === "Leaderboard" ? <Award className="h-4 w-4" /> : null}
+                <span>{label}</span>
               </NavLink>
-            )}
-            {isAdmin && (
-              <NavLink
-                to="/admin"
-                className={({ isActive }) =>
-                  `px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${
-                    isActive ? "text-primary bg-accent" : "text-muted-foreground hover:text-foreground"
-                  }`
-                }
-              >
-                <ShieldCheck className="h-4 w-4" /> Admin
-              </NavLink>
-            )}
-            {isAdmin && <NotificationBell />}
+            ))}
+          </nav>
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button
               variant="ghost"
               size="icon"
@@ -97,11 +70,42 @@ export default function Layout() {
                 <LogOut className="h-4 w-4" /> Sign out
               </Button>
             ) : (
-              <Button asChild size="sm" variant="default">
-                <Link to="/login">Admin login</Link>
+              <>
+                <Button asChild size="sm" variant="ghost" className="hidden sm:inline-flex">
+                  <Link to={`/login?redirect=${authRedirect}`}>Sign in</Link>
+                </Button>
+                <Button asChild size="sm" variant="default">
+                  <Link to={`/login?mode=signup&redirect=${authRedirect}`}>Create account</Link>
+                </Button>
+              </>
+            )}
+            {user && (
+              <Button asChild size="sm" variant="ghost" className="hidden sm:inline-flex">
+                <Link to="/profile" className="gap-1.5 inline-flex items-center">
+                  <UserIcon className="h-4 w-4" /> Profile
+                </Link>
               </Button>
             )}
-          </nav>
+          </div>
+        </div>
+
+        <div className="md:hidden border-t border-border/60">
+          <div className="container flex items-center gap-2 overflow-x-auto py-2 no-scrollbar">
+            {publicLinks.map(({ to, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === "/"}
+                className={({ isActive }) =>
+                  `whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                    isActive ? "bg-accent text-primary" : "text-muted-foreground hover:text-foreground"
+                  }`
+                }
+              >
+                {label}
+              </NavLink>
+            ))}
+          </div>
         </div>
       </header>
       <main className="flex-1 pb-20 md:pb-0">

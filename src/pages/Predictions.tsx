@@ -26,7 +26,7 @@ export default function Predictions() {
       .is("result", null)
       .order("prediction_deadline", { ascending: true, nullsFirst: false })
       .limit(12)
-      .then(({ data }) => setMatches((data as PredictionMatch[]) ?? []));
+      .then(({ data }) => setMatches((((data as unknown) as PredictionMatch[]) ?? [])));
   }, []);
 
   return (

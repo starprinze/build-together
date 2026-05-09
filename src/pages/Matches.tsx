@@ -31,7 +31,7 @@ export default function Matches() {
       .limit(24)
       .then(({ data }) => {
         if (cancelled) return;
-        setMatches((data as MatchItem[]) ?? []);
+        setMatches(((data as unknown) as MatchItem[]) ?? []);
         setLoading(false);
       });
 

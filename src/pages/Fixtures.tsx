@@ -24,7 +24,7 @@ export default function Fixtures() {
       .select("id,event_id,round,match_number,status,prediction_deadline,team_a:team_a_id(name),team_b:team_b_id(name)")
       .order("prediction_deadline", { ascending: true, nullsFirst: false })
       .limit(24)
-      .then(({ data }) => setFixtures((data as FixtureRow[]) ?? []));
+      .then(({ data }) => setFixtures((((data as unknown) as FixtureRow[]) ?? [])));
   }, []);
 
   return (

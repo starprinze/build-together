@@ -19,8 +19,8 @@ export default function Gallery() {
     (async () => {
       const { data: evts } = await supabase
         .from("events")
-        .select("id, name, starts_at")
-        .order("starts_at", { ascending: false });
+        .select("id, name, start_date")
+        .order("start_date", { ascending: false });
       const list = (evts as EventRow[]) ?? [];
       const withCounts = await Promise.all(
         list.map(async (e) => {
@@ -65,9 +65,9 @@ export default function Gallery() {
                   {e.photo_count} item{e.photo_count === 1 ? "" : "s"}
                 </div>
                 <h3 className="font-display font-semibold text-lg">{e.name}</h3>
-                {e.starts_at && (
+                {e.start_date && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    {new Date(e.starts_at).toLocaleDateString()}
+                    {new Date(e.start_date).toLocaleDateString()}
                   </p>
                 )}
               </Card>

@@ -488,7 +488,7 @@ export type Database = {
       app_role: "admin" | "user"
       event_status: "upcoming" | "ongoing" | "completed"
       fixture_format: "single_elim" | "double_elim" | "round_robin" | "league"
-      match_status: "pending" | "completed" | "bye"
+      match_status: "pending" | "completed" | "bye" | "live" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -619,7 +619,7 @@ export const Constants = {
       app_role: ["admin", "user"],
       event_status: ["upcoming", "ongoing", "completed"],
       fixture_format: ["single_elim", "double_elim", "round_robin", "league"],
-      match_status: ["pending", "completed", "bye"],
+      match_status: ["pending", "completed", "bye", "live", "cancelled"],
     },
   },
 } as const

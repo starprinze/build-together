@@ -1,12 +1,12 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Trophy, LogOut, Award, User as UserIcon, Sun, Moon } from "lucide-react";
+import { Trophy, LogOut, Award, User as UserIcon, Sun, Moon, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export default function Layout() {
-  const { user, signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -86,6 +86,13 @@ export default function Layout() {
                 </Link>
               </Button>
             )}
+            {isAdmin && (
+              <Button asChild size="sm" variant="ghost" className="hidden md:inline-flex text-muted-foreground hover:text-foreground" title="Admin console">
+                <Link to="/admin">
+                  <Shield className="h-4 w-4" />
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -111,8 +118,13 @@ export default function Layout() {
       <main className="flex-1 pb-20 md:pb-0">
         <Outlet />
       </main>
-      <footer className="border-t border-border py-6 text-center text-sm text-muted-foreground">
-        Built for campus tournaments · Lovable Cloud
+      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground space-y-1">
+        <div>Built for campus tournaments · Lovable Cloud</div>
+        <div>
+          <Link to="/admin/login" className="hover:text-foreground transition-colors">
+            Organizer login
+          </Link>
+        </div>
       </footer>
       <MobileBottomNav />
     </div>

@@ -8,7 +8,16 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Sparkles, RotateCcw, FileDown, FileText, Wand2, Clock } from "lucide-react";
-import { generateFixtures, resetFixtures, submitScore, type FixtureFormat } from "@/lib/bracket";
+import {
+  generateFixtures,
+  resetFixtures,
+  submitScore,
+  startMatch,
+  finishMatch,
+  reopenMatch,
+  cancelMatch,
+  type FixtureFormat,
+} from "@/lib/bracket";
 import { BracketView, MatchRow } from "@/components/BracketView";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -93,12 +102,56 @@ export default function AdminFixtures() {
     if (!scoringMatch) return;
     try {
       await submitScore(scoringMatch.id, parseInt(scoreA), parseInt(scoreB));
-      toast.success("Score saved");
-      setScoringMatch(null);
+      toast.success("Score saved · match marked Live");
       load();
     } catch (err: any) {
       toast.error(err.message);
     }
+  };
+
+  const handleStart = async () => {
+    if (!scoringMatch) return;
+    try {
+      await startMatch(scoringMatch.id);
+      toast.success("Match started");
+      setScoringMatch(null);
+      load();
+    } catch (err: any) { toast.error(err.message); }
+  };
+
+  const handleFinish = async () => {
+    if (!scoringMatch) return;
+    if (!confirm("Finish this match? Predictions will finalise and points awarded.")) return;
+    try {
+      const a = scoreA === "" ? undefined : parseInt(scoreA);
+      const b = scoreB === "" ? undefined : parseInt(scoreB);
+      await finishMatch(scoringMatch.id, a, b);
+      toast.success("Match finished · points awarded");
+      setScoringMatch(null);
+      load();
+    } catch (err: any) { toast.error(err.message); }
+  };
+
+  const handleReopen = async () => {
+    if (!scoringMatch) return;
+    if (!confirm("Reopen this match for editing?")) return;
+    try {
+      await reopenMatch(scoringMatch.id);
+      toast.success("Match reopened");
+      setScoringMatch(null);
+      load();
+    } catch (err: any) { toast.error(err.message); }
+  };
+
+  const handleCancel = async () => {
+    if (!scoringMatch) return;
+    if (!confirm("Cancel this match?")) return;
+    try {
+      await cancelMatch(scoringMatch.id);
+      toast.success("Match cancelled");
+      setScoringMatch(null);
+      load();
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const handleExport = async (kind: "pdf" | "excel" | "csv" | "docx") => {
@@ -261,22 +314,56 @@ export default function AdminFixtures() {
       <Dialog open={!!scoringMatch} onOpenChange={(o) => !o && setScoringMatch(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Enter score</DialogTitle>
+            <DialogTitle>
+              Match control · <span className="capitalize">{scoringMatch?.status}</span>
+            </DialogTitle>
+            {scoringMatch && (
+              <DialogDescription>
+                {scoringMatch.team_a?.name} vs {scoringMatch.team_b?.name}
+              </DialogDescription>
+            )}
           </DialogHeader>
           {scoringMatch && (
             <form onSubmit={saveScore} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>{scoringMatch.team_a?.name}</Label>
-                  <Input type="number" min={0} required value={scoreA} onChange={(e) => setScoreA(e.target.value)} />
+                  <Input type="number" min={0} value={scoreA} onChange={(e) => setScoreA(e.target.value)} />
                 </div>
                 <div>
                   <Label>{scoringMatch.team_b?.name}</Label>
-                  <Input type="number" min={0} required value={scoreB} onChange={(e) => setScoreB(e.target.value)} />
+                  <Input type="number" min={0} value={scoreB} onChange={(e) => setScoreB(e.target.value)} />
                 </div>
               </div>
-              <DialogFooter>
-                <Button type="submit" className="shadow-court">Save score</Button>
+              <p className="text-xs text-muted-foreground">
+                Saving the score keeps the match <strong>Live</strong>. Click <strong>Finish match</strong> only when full-time — that's when predictions finalise and points are awarded.
+              </p>
+              <DialogFooter className="flex-wrap gap-2 sm:gap-2">
+                {scoringMatch.status === "pending" && (
+                  <Button type="button" variant="outline" onClick={handleStart}>
+                    Start match
+                  </Button>
+                )}
+                {scoringMatch.status !== "completed" && scoringMatch.status !== "cancelled" && (
+                  <>
+                    <Button type="submit" variant="secondary">
+                      Save score
+                    </Button>
+                    <Button type="button" onClick={handleFinish} className="shadow-court">
+                      Finish match
+                    </Button>
+                  </>
+                )}
+                {scoringMatch.status === "completed" && (
+                  <Button type="button" variant="outline" onClick={handleReopen}>
+                    Reopen
+                  </Button>
+                )}
+                {scoringMatch.status !== "cancelled" && scoringMatch.status !== "completed" && (
+                  <Button type="button" variant="ghost" className="text-destructive" onClick={handleCancel}>
+                    Cancel match
+                  </Button>
+                )}
               </DialogFooter>
             </form>
           )}

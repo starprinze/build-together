@@ -20,7 +20,7 @@ export interface MatchRow {
   score_a: number | null;
   score_b: number | null;
   winner_id: string | null;
-  status: "pending" | "completed" | "bye";
+  status: "pending" | "live" | "completed" | "cancelled" | "bye";
   prediction_deadline?: string | null;
   result?: "team_a" | "team_b" | "draw" | null;
   team_a: { id: string; name: string; department?: string } | null;
@@ -80,10 +80,11 @@ function MatchCard({
 }) {
   const isBye = match.status === "bye";
   const isCompleted = match.status === "completed";
-  const canScore = !!(match.team_a_id && match.team_b_id) && !isCompleted && !isBye;
+  const isLive = match.status === "live";
+  const canEdit = !!(match.team_a_id && match.team_b_id) && !isBye && match.status !== "cancelled";
 
   return (
-    <Card className="p-0 overflow-hidden shadow-card">
+    <Card className={cn("p-0 overflow-hidden shadow-card", isLive && "ring-1 ring-destructive/40")}>
       <TeamRow
         name={match.team_a?.name ?? (isBye && !match.team_a ? "BYE" : "TBD")}
         teamId={match.team_a?.id ?? null}
@@ -102,7 +103,7 @@ function MatchCard({
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">
             Match {match.match_number} {isBye && "· auto-advance"}
           </span>
-          <StatusPill status={match.status} hasTeams={!!(match.team_a_id && match.team_b_id)} />
+          <StatusPill status={match.status} />
         </div>
         <div className="flex items-center gap-3">
           {onDetailsClick && !isBye && (
@@ -113,12 +114,12 @@ function MatchCard({
               Details
             </button>
           )}
-          {canScore && onScoreClick && (
+          {canEdit && onScoreClick && (
             <button
               onClick={() => onScoreClick(match)}
               className="text-xs font-medium text-primary hover:underline"
             >
-              + Score
+              {isCompleted ? "Edit" : isLive ? "Update" : "+ Score"}
             </button>
           )}
         </div>
@@ -127,23 +128,18 @@ function MatchCard({
   );
 }
 
-function StatusPill({ status, hasTeams }: { status: MatchRow["status"]; hasTeams: boolean }) {
-  const label = status === "completed"
-    ? "Finished"
-    : status === "bye"
-      ? "Bye"
-      : hasTeams
-        ? "Live"
-        : "Pending";
-  const cls = status === "completed"
-    ? "bg-primary/10 text-primary"
-    : status === "bye"
-      ? "bg-muted text-muted-foreground"
-      : hasTeams
-        ? "bg-destructive/10 text-destructive"
-        : "bg-muted text-muted-foreground";
+function StatusPill({ status }: { status: MatchRow["status"] }) {
+  const map: Record<MatchRow["status"], { label: string; cls: string }> = {
+    completed: { label: "Finished", cls: "bg-primary/10 text-primary" },
+    live: { label: "Live", cls: "bg-destructive/15 text-destructive" },
+    pending: { label: "Upcoming", cls: "bg-muted text-muted-foreground" },
+    bye: { label: "Bye", cls: "bg-muted text-muted-foreground" },
+    cancelled: { label: "Cancelled", cls: "bg-muted text-muted-foreground line-through" },
+  };
+  const { label, cls } = map[status];
   return (
-    <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded uppercase tracking-wider", cls)}>
+    <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded uppercase tracking-wider inline-flex items-center gap-1", cls)}>
+      {status === "live" && <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />}
       {label}
     </span>
   );

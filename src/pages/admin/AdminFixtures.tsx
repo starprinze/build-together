@@ -314,22 +314,56 @@ export default function AdminFixtures() {
       <Dialog open={!!scoringMatch} onOpenChange={(o) => !o && setScoringMatch(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Enter score</DialogTitle>
+            <DialogTitle>
+              Match control · <span className="capitalize">{scoringMatch?.status}</span>
+            </DialogTitle>
+            {scoringMatch && (
+              <DialogDescription>
+                {scoringMatch.team_a?.name} vs {scoringMatch.team_b?.name}
+              </DialogDescription>
+            )}
           </DialogHeader>
           {scoringMatch && (
             <form onSubmit={saveScore} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>{scoringMatch.team_a?.name}</Label>
-                  <Input type="number" min={0} required value={scoreA} onChange={(e) => setScoreA(e.target.value)} />
+                  <Input type="number" min={0} value={scoreA} onChange={(e) => setScoreA(e.target.value)} />
                 </div>
                 <div>
                   <Label>{scoringMatch.team_b?.name}</Label>
-                  <Input type="number" min={0} required value={scoreB} onChange={(e) => setScoreB(e.target.value)} />
+                  <Input type="number" min={0} value={scoreB} onChange={(e) => setScoreB(e.target.value)} />
                 </div>
               </div>
-              <DialogFooter>
-                <Button type="submit" className="shadow-court">Save score</Button>
+              <p className="text-xs text-muted-foreground">
+                Saving the score keeps the match <strong>Live</strong>. Click <strong>Finish match</strong> only when full-time — that's when predictions finalise and points are awarded.
+              </p>
+              <DialogFooter className="flex-wrap gap-2 sm:gap-2">
+                {scoringMatch.status === "pending" && (
+                  <Button type="button" variant="outline" onClick={handleStart}>
+                    Start match
+                  </Button>
+                )}
+                {scoringMatch.status !== "completed" && scoringMatch.status !== "cancelled" && (
+                  <>
+                    <Button type="submit" variant="secondary">
+                      Save score
+                    </Button>
+                    <Button type="button" onClick={handleFinish} className="shadow-court">
+                      Finish match
+                    </Button>
+                  </>
+                )}
+                {scoringMatch.status === "completed" && (
+                  <Button type="button" variant="outline" onClick={handleReopen}>
+                    Reopen
+                  </Button>
+                )}
+                {scoringMatch.status !== "cancelled" && scoringMatch.status !== "completed" && (
+                  <Button type="button" variant="ghost" className="text-destructive" onClick={handleCancel}>
+                    Cancel match
+                  </Button>
+                )}
               </DialogFooter>
             </form>
           )}

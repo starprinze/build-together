@@ -7,7 +7,7 @@ import { Camera } from "lucide-react";
 interface EventRow {
   id: string;
   name: string;
-  starts_at: string | null;
+  start_date: string | null;
   photo_count?: number;
 }
 

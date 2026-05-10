@@ -102,12 +102,56 @@ export default function AdminFixtures() {
     if (!scoringMatch) return;
     try {
       await submitScore(scoringMatch.id, parseInt(scoreA), parseInt(scoreB));
-      toast.success("Score saved");
-      setScoringMatch(null);
+      toast.success("Score saved · match marked Live");
       load();
     } catch (err: any) {
       toast.error(err.message);
     }
+  };
+
+  const handleStart = async () => {
+    if (!scoringMatch) return;
+    try {
+      await startMatch(scoringMatch.id);
+      toast.success("Match started");
+      setScoringMatch(null);
+      load();
+    } catch (err: any) { toast.error(err.message); }
+  };
+
+  const handleFinish = async () => {
+    if (!scoringMatch) return;
+    if (!confirm("Finish this match? Predictions will finalise and points awarded.")) return;
+    try {
+      const a = scoreA === "" ? undefined : parseInt(scoreA);
+      const b = scoreB === "" ? undefined : parseInt(scoreB);
+      await finishMatch(scoringMatch.id, a, b);
+      toast.success("Match finished · points awarded");
+      setScoringMatch(null);
+      load();
+    } catch (err: any) { toast.error(err.message); }
+  };
+
+  const handleReopen = async () => {
+    if (!scoringMatch) return;
+    if (!confirm("Reopen this match for editing?")) return;
+    try {
+      await reopenMatch(scoringMatch.id);
+      toast.success("Match reopened");
+      setScoringMatch(null);
+      load();
+    } catch (err: any) { toast.error(err.message); }
+  };
+
+  const handleCancel = async () => {
+    if (!scoringMatch) return;
+    if (!confirm("Cancel this match?")) return;
+    try {
+      await cancelMatch(scoringMatch.id);
+      toast.success("Match cancelled");
+      setScoringMatch(null);
+      load();
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const handleExport = async (kind: "pdf" | "excel" | "csv" | "docx") => {

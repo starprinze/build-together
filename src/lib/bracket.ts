@@ -264,8 +264,10 @@ export async function submitScore(matchId: string, scoreA: number, scoreB: numbe
     .single();
   if (error || !match) throw error ?? new Error("Match not found");
 
-  const update: Record<string, unknown> = { score_a: scoreA, score_b: scoreB };
-  // First time scores are entered for an upcoming match? Promote to live.
+  const update: { score_a: number; score_b: number; status?: "live" } = {
+    score_a: scoreA,
+    score_b: scoreB,
+  };
   if (match.status === "pending") update.status = "live";
 
   const { error: upErr } = await supabase

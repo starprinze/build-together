@@ -86,6 +86,13 @@ export default function Layout() {
                 </Link>
               </Button>
             )}
+            {isAdmin && (
+              <Button asChild size="sm" variant="ghost" className="hidden md:inline-flex text-muted-foreground hover:text-foreground" title="Admin console">
+                <Link to="/admin">
+                  <Shield className="h-4 w-4" />
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
 

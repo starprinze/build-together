@@ -8,7 +8,16 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Sparkles, RotateCcw, FileDown, FileText, Wand2, Clock } from "lucide-react";
-import { generateFixtures, resetFixtures, submitScore, type FixtureFormat } from "@/lib/bracket";
+import {
+  generateFixtures,
+  resetFixtures,
+  submitScore,
+  startMatch,
+  finishMatch,
+  reopenMatch,
+  cancelMatch,
+  type FixtureFormat,
+} from "@/lib/bracket";
 import { BracketView, MatchRow } from "@/components/BracketView";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,

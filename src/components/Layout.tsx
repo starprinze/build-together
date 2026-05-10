@@ -118,8 +118,13 @@ export default function Layout() {
       <main className="flex-1 pb-20 md:pb-0">
         <Outlet />
       </main>
-      <footer className="border-t border-border py-6 text-center text-sm text-muted-foreground">
-        Built for campus tournaments · Lovable Cloud
+      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground space-y-1">
+        <div>Built for campus tournaments · Lovable Cloud</div>
+        <div>
+          <Link to="/admin/login" className="hover:text-foreground transition-colors">
+            Organizer login
+          </Link>
+        </div>
       </footer>
       <MobileBottomNav />
     </div>

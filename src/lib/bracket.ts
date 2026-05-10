@@ -252,26 +252,91 @@ export async function advanceWinner(
   await supabase.from("matches").update(update).eq("id", nextMatch.id);
 }
 
+/**
+ * Update live scores WITHOUT changing match status.
+ * Admins may call this any number of times during a live match.
+ */
 export async function submitScore(matchId: string, scoreA: number, scoreB: number) {
+  const { data: match, error } = await supabase
+    .from("matches")
+    .select("id,status")
+    .eq("id", matchId)
+    .single();
+  if (error || !match) throw error ?? new Error("Match not found");
+
+  const update: Record<string, unknown> = { score_a: scoreA, score_b: scoreB };
+  // First time scores are entered for an upcoming match? Promote to live.
+  if (match.status === "pending") update.status = "live";
+
+  const { error: upErr } = await supabase
+    .from("matches")
+    .update(update)
+    .eq("id", matchId);
+  if (upErr) throw upErr;
+}
+
+/** Mark a match as live (no score change). */
+export async function startMatch(matchId: string) {
+  const { error } = await supabase
+    .from("matches")
+    .update({ status: "live" })
+    .eq("id", matchId);
+  if (error) throw error;
+}
+
+/** Reopen a match for editing (live -> pending or completed -> live). */
+export async function reopenMatch(matchId: string) {
+  const { error } = await supabase
+    .from("matches")
+    .update({ status: "live", winner_id: null, result: null })
+    .eq("id", matchId);
+  if (error) throw error;
+}
+
+/** Finalise a match: derives winner/result and advances bracket. */
+export async function finishMatch(
+  matchId: string,
+  scoreA?: number,
+  scoreB?: number,
+) {
   const { data: match, error } = await supabase
     .from("matches")
     .select("*")
     .eq("id", matchId)
     .single();
-  if (error || !match) throw error;
-  if (scoreA === scoreB) throw new Error("Scores cannot be tied");
-  const winnerId = scoreA > scoreB ? match.team_a_id : match.team_b_id;
+  if (error || !match) throw error ?? new Error("Match not found");
+
+  const a = scoreA ?? match.score_a;
+  const b = scoreB ?? match.score_b;
+  if (a == null || b == null) throw new Error("Enter both scores before finishing");
+  if (a === b) throw new Error("Knockout matches cannot end in a tie");
+
+  const winnerId = a > b ? match.team_a_id : match.team_b_id;
   if (!winnerId) throw new Error("Cannot determine winner");
 
-  await supabase
+  const { error: upErr } = await supabase
     .from("matches")
-    .update({ score_a: scoreA, score_b: scoreB, winner_id: winnerId, status: "completed" })
+    .update({
+      score_a: a,
+      score_b: b,
+      winner_id: winnerId,
+      status: "completed",
+    })
     .eq("id", matchId);
+  if (upErr) throw upErr;
 
-  // Only auto-advance for single-elim 'main' brackets to avoid corrupting RR/league standings.
   if (match.bracket === "main") {
     await advanceWinner(match.event_id, match.round, match.match_number, winnerId);
   }
+}
+
+/** Cancel a scheduled or live match. */
+export async function cancelMatch(matchId: string) {
+  const { error } = await supabase
+    .from("matches")
+    .update({ status: "cancelled" })
+    .eq("id", matchId);
+  if (error) throw error;
 }
 
 export async function resetFixtures(eventId: string) {

@@ -167,12 +167,15 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
         </Card>
       )}
 
-      <Tabs defaultValue="bracket" className="w-full">
-        <TabsList className="mb-6">
+      <Tabs defaultValue={defaultTab} className="w-full">
+        <TabsList className="mb-6 flex w-full overflow-x-auto sm:w-auto">
           <TabsTrigger value="bracket">Bracket</TabsTrigger>
+          <TabsTrigger value="predictions">Predictions</TabsTrigger>
+          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
           <TabsTrigger value="standings">Standings</TabsTrigger>
           <TabsTrigger value="gallery">Gallery</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="bracket" className="mt-0">
           {matches.length === 0 ? (

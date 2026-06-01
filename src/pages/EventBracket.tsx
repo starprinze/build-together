@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Trophy, Users, Radio, Calendar, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,10 +14,11 @@ import { MatchReactions } from "@/components/MatchReactions";
 import { MatchPrediction } from "@/components/MatchPrediction";
 import { EventLeaderboard } from "@/components/EventLeaderboard";
 import { computeStandings } from "@/lib/standings";
+import { lazyWithRetry } from "@/lib/moduleLoadRecovery";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-const EventGallery = lazy(() =>
+const EventGallery = lazyWithRetry(() =>
   import("@/components/EventGallery").then((m) => ({ default: m.EventGallery })),
 );
 

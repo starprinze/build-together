@@ -1,14 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import { recoverFromModuleLoadError } from "./lib/moduleLoadRecovery";
 import "./index.css";
-
-const MODULE_RELOAD_KEY = "module-load-recovered";
-
-function reloadOnceForModuleFailure() {
-  if (sessionStorage.getItem(MODULE_RELOAD_KEY)) return;
-  sessionStorage.setItem(MODULE_RELOAD_KEY, "1");
-  window.location.reload();
-}
 
 // Service worker hygiene: never register inside iframes / preview hosts.
 const isInIframe = (() => {
@@ -33,7 +26,7 @@ if (isInIframe || isPreviewHost) {
 // Recover from stale lazy-chunk loads (e.g. after a new deploy / stale SW cache).
 // Reload once instead of leaving the user on a blank screen.
 window.addEventListener("vite:preloadError", () => {
-  reloadOnceForModuleFailure();
+  recoverFromModuleLoadError(new Error("vite:preloadError"), window.location.href);
 });
 
 window.addEventListener("error", (event) => {
@@ -42,11 +35,9 @@ window.addEventListener("error", (event) => {
   const message = event.message ?? "";
 
   if (
-    message.includes("Importing a module script failed") ||
-    source.includes("/node_modules/.vite/deps/") ||
-    source.includes("/assets/")
+    recoverFromModuleLoadError(new Error(message), source)
   ) {
-    reloadOnceForModuleFailure();
+    return;
   }
 }, true);
 
@@ -60,10 +51,9 @@ window.addEventListener("unhandledrejection", (event) => {
         : "";
 
   if (
-    message.includes("Importing a module script failed") ||
-    message.includes("Failed to fetch dynamically imported module")
+    recoverFromModuleLoadError(reason)
   ) {
-    reloadOnceForModuleFailure();
+    return;
   }
 });
 

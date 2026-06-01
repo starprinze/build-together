@@ -116,6 +116,8 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
   const finalMatch = matches.find((m) => m.round === totalRounds);
   const champion = totalRounds > 0 && finalMatch?.status === "completed" ? finalMatch.winner : null;
   const standings = computeStandings(matches);
+  const matchIds = matches.map((m) => m.id);
+  const predictableMatches = matches.filter((m) => m.team_a && m.team_b);
 
   return (
     <div className="container py-8 sm:py-12">

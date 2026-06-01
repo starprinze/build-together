@@ -32,7 +32,7 @@ export function EventLeaderboard({ eventId, matchIds, preview = false }: Props) 
     setLoading(true);
     (async () => {
       const lbPromise = supabase
-        .from("event_leaderboard" as never)
+        .from("event_leaderboard" as any)
         .select("*")
         .eq("event_id", eventId)
         .order("total_points", { ascending: false })

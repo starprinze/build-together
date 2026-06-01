@@ -12,6 +12,7 @@ import { StandingsTable } from "@/components/StandingsTable";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchReactions } from "@/components/MatchReactions";
 import { MatchPrediction } from "@/components/MatchPrediction";
+import { EventLeaderboard } from "@/components/EventLeaderboard";
 import { computeStandings } from "@/lib/standings";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -45,7 +46,7 @@ async function shareEvent(name: string) {
   }
 }
 
-export default function EventBracket() {
+export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: string }) {
   const { id } = useParams<{ id: string }>();
   const { isAdmin } = useAuth();
   const [event, setEvent] = useState<EventInfo | null>(null);
@@ -115,6 +116,8 @@ export default function EventBracket() {
   const finalMatch = matches.find((m) => m.round === totalRounds);
   const champion = totalRounds > 0 && finalMatch?.status === "completed" ? finalMatch.winner : null;
   const standings = computeStandings(matches);
+  const matchIds = matches.map((m) => m.id);
+  const predictableMatches = matches.filter((m) => m.team_a && m.team_b);
 
   return (
     <div className="container py-8 sm:py-12">
@@ -164,12 +167,15 @@ export default function EventBracket() {
         </Card>
       )}
 
-      <Tabs defaultValue="bracket" className="w-full">
-        <TabsList className="mb-6">
+      <Tabs defaultValue={defaultTab} className="w-full">
+        <TabsList className="mb-6 flex w-full overflow-x-auto sm:w-auto">
           <TabsTrigger value="bracket">Bracket</TabsTrigger>
+          <TabsTrigger value="predictions">Predictions</TabsTrigger>
+          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
           <TabsTrigger value="standings">Standings</TabsTrigger>
           <TabsTrigger value="gallery">Gallery</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="bracket" className="mt-0">
           {matches.length === 0 ? (
@@ -182,6 +188,45 @@ export default function EventBracket() {
             <BracketView matches={matches} onDetailsClick={(m) => setOpenMatch(m)} />
           )}
         </TabsContent>
+
+        <TabsContent value="predictions" className="mt-0">
+          {predictableMatches.length === 0 ? (
+            <Card className="p-12 text-center">
+              <Trophy className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+              <h3 className="font-display font-semibold mb-1">No matches to predict yet</h3>
+              <p className="text-sm text-muted-foreground">Predictions open once fixtures are set.</p>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {predictableMatches.map((m) => (
+                <Card key={m.id} className="p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium truncate">
+                      {m.team_a?.name ?? "TBD"} vs {m.team_b?.name ?? "TBD"}
+                    </p>
+                    <Badge variant="outline" className="capitalize text-[10px] shrink-0">
+                      {m.status}
+                    </Badge>
+                  </div>
+                  <MatchPrediction
+                    matchId={m.id}
+                    teamAName={m.team_a?.name ?? "Team A"}
+                    teamBName={m.team_b?.name ?? "Team B"}
+                    predictionDeadline={m.prediction_deadline ?? null}
+                    result={m.result ?? null}
+                    status={m.status}
+                  />
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="leaderboard" className="mt-0">
+          <EventLeaderboard eventId={event.id} matchIds={matchIds} />
+        </TabsContent>
+
+
 
         <TabsContent value="standings" className="mt-0">
           <StandingsTable rows={standings} />

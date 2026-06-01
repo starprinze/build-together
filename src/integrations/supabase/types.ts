@@ -462,6 +462,24 @@ export type Database = {
       }
     }
     Views: {
+      event_leaderboard: {
+        Row: {
+          correct_predictions: number | null
+          event_id: string | null
+          total_points: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leaderboard: {
         Row: {
           correct_predictions: number | null

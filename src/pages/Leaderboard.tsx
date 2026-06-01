@@ -1,31 +1,28 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trophy, Medal } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
+import { Trophy, ArrowRight } from "lucide-react";
 
-interface Row {
-  user_id: string;
-  username: string | null;
-  total_points: number;
-  correct_predictions: number;
+interface EventRow {
+  id: string;
+  name: string;
+  sport: string;
+  status: string;
 }
 
 export default function Leaderboard() {
-  const { user } = useAuth();
-  const [rows, setRows] = useState<Row[]>([]);
+  const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     supabase
-      .from("leaderboard" as any)
-      .select("*")
-      .order("total_points", { ascending: false })
-      .limit(100)
+      .from("events")
+      .select("id,name,sport,status")
+      .order("start_date", { ascending: false })
       .then(({ data }) => {
-        setRows((data as unknown as Row[]) ?? []);
+        setEvents((data as EventRow[]) ?? []);
         setLoading(false);
       });
   }, []);
@@ -37,72 +34,38 @@ export default function Leaderboard() {
           <Trophy className="h-5 w-5" />
         </span>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold">Leaderboard</h1>
-          <p className="text-sm text-muted-foreground">Top predictors across all events.</p>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold">Leaderboards</h1>
+          <p className="text-sm text-muted-foreground">
+            Each tournament has its own leaderboard. Pick an event to see its rankings.
+          </p>
         </div>
       </div>
 
       {loading ? (
         <Card className="p-12 text-center text-muted-foreground">Loading…</Card>
-      ) : rows.length === 0 ? (
+      ) : events.length === 0 ? (
         <Card className="p-12 text-center">
           <Trophy className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-          <h3 className="font-display font-semibold mb-1">No points yet</h3>
-          <p className="text-sm text-muted-foreground">
-            Be the first to predict a match correctly and climb the board.
-          </p>
+          <h3 className="font-display font-semibold mb-1">No events yet</h3>
+          <p className="text-sm text-muted-foreground">Leaderboards appear once tournaments are live.</p>
         </Card>
       ) : (
-        <Card className="overflow-hidden shadow-card">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableHead className="w-12 text-center">#</TableHead>
-                <TableHead>Player</TableHead>
-                <TableHead className="text-center hidden sm:table-cell">Correct</TableHead>
-                <TableHead className="text-center font-display">Pts</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r, i) => {
-                const isMe = user?.id === r.user_id;
-                return (
-                  <TableRow
-                    key={r.user_id}
-                    className={cn(i === 0 && "bg-accent/40", isMe && "bg-primary/5")}
-                  >
-                    <TableCell className="text-center font-mono tabular-nums">
-                      {i < 3 ? (
-                        <Medal
-                          className={cn(
-                            "h-4 w-4 inline",
-                            i === 0 && "text-yellow-500",
-                            i === 1 && "text-zinc-400",
-                            i === 2 && "text-amber-700",
-                          )}
-                        />
-                      ) : (
-                        i + 1
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {r.username || "Player"}
-                      {isMe && (
-                        <span className="ml-2 text-xs text-primary font-semibold">you</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center font-mono tabular-nums hidden sm:table-cell text-muted-foreground">
-                      {r.correct_predictions}
-                    </TableCell>
-                    <TableCell className="text-center font-display font-bold">
-                      {r.total_points}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </Card>
+        <div className="grid gap-3">
+          {events.map((e) => (
+            <Link key={e.id} to={`/events/${e.id}/leaderboard`}>
+              <Card className="p-4 flex items-center justify-between gap-4 transition-all hover:shadow-elevated">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{e.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1 capitalize">{e.sport}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge variant="outline" className="capitalize">{e.status}</Badge>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
       )}
     </div>
   );

@@ -189,6 +189,45 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
           )}
         </TabsContent>
 
+        <TabsContent value="predictions" className="mt-0">
+          {predictableMatches.length === 0 ? (
+            <Card className="p-12 text-center">
+              <Trophy className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+              <h3 className="font-display font-semibold mb-1">No matches to predict yet</h3>
+              <p className="text-sm text-muted-foreground">Predictions open once fixtures are set.</p>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {predictableMatches.map((m) => (
+                <Card key={m.id} className="p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium truncate">
+                      {m.team_a?.name ?? "TBD"} vs {m.team_b?.name ?? "TBD"}
+                    </p>
+                    <Badge variant="outline" className="capitalize text-[10px] shrink-0">
+                      {m.status}
+                    </Badge>
+                  </div>
+                  <MatchPrediction
+                    matchId={m.id}
+                    teamAName={m.team_a?.name ?? "Team A"}
+                    teamBName={m.team_b?.name ?? "Team B"}
+                    predictionDeadline={m.prediction_deadline ?? null}
+                    result={m.result ?? null}
+                    status={m.status}
+                  />
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="leaderboard" className="mt-0">
+          <EventLeaderboard eventId={event.id} matchIds={matchIds} />
+        </TabsContent>
+
+
+
         <TabsContent value="standings" className="mt-0">
           <StandingsTable rows={standings} />
         </TabsContent>

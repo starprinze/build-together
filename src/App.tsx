@@ -61,6 +61,8 @@ const App = () => (
                   <Route path="/fixtures" element={<Fixtures />} />
                   <Route path="/gallery" element={<Gallery />} />
                   <Route path="/events/:id" element={<EventBracket />} />
+                  <Route path="/events/:id/leaderboard" element={<EventBracket defaultTab="leaderboard" />} />
+                  <Route path="/events/:id/predictions" element={<EventBracket defaultTab="predictions" />} />
                   <Route path="/teams/:id" element={<TeamProfile />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/profile" element={<Profile />} />

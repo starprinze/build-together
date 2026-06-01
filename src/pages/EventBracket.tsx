@@ -46,7 +46,7 @@ async function shareEvent(name: string) {
   }
 }
 
-export default function EventBracket() {
+export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: string }) {
   const { id } = useParams<{ id: string }>();
   const { isAdmin } = useAuth();
   const [event, setEvent] = useState<EventInfo | null>(null);

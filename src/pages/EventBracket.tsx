@@ -12,6 +12,7 @@ import { StandingsTable } from "@/components/StandingsTable";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchReactions } from "@/components/MatchReactions";
 import { MatchPrediction } from "@/components/MatchPrediction";
+import { EventLeaderboard } from "@/components/EventLeaderboard";
 import { computeStandings } from "@/lib/standings";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";

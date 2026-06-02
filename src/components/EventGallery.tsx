@@ -78,15 +78,20 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
 
   useEffect(() => {
     load();
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const channel = supabase
       .channel(`event-photos-${eventId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "event_photos", filter: `event_id=eq.${eventId}` },
-        () => load(),
+        () => {
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(() => load(), 250);
+        },
       )
       .subscribe();
     return () => {
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [eventId]);

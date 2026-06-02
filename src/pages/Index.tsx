@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Calendar,
@@ -68,7 +68,10 @@ export default function Index() {
         "id,event_id,match_number,round,status,score_a,score_b,team_a:team_a_id(name),team_b:team_b_id(name)";
 
       const [evRes, liveRes, upRes, doneRes, lbRes] = await Promise.all([
-        supabase.from("events").select("*").order("start_date", { ascending: false }),
+        supabase
+          .from("events")
+          .select("id,name,sport,start_date,end_date,status")
+          .order("start_date", { ascending: false }),
         supabase
           .from("matches")
           .select(matchSelect)
@@ -475,7 +478,7 @@ export default function Index() {
   );
 }
 
-function LiveMatchCard({ match }: { match: MatchRow }) {
+const LiveMatchCard = memo(function LiveMatchCard({ match }: { match: MatchRow }) {
   const isLive = match.status === "live";
   const a = match.score_a ?? 0;
   const b = match.score_b ?? 0;
@@ -524,7 +527,7 @@ function LiveMatchCard({ match }: { match: MatchRow }) {
       </Card>
     </Link>
   );
-}
+});
 
 function TeamSide({ name, align = "left" }: { name: string; align?: "left" | "right" }) {
   return (

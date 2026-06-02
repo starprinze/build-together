@@ -75,8 +75,12 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
     let cancelled = false;
     (async () => {
       const [{ data: ev }, { count }] = await Promise.all([
-        supabase.from("events").select("*").eq("id", id).maybeSingle(),
-        supabase.from("teams").select("*", { count: "exact", head: true }).eq("event_id", id),
+        supabase
+          .from("events")
+          .select("id,name,sport,start_date,end_date,status")
+          .eq("id", id)
+          .maybeSingle(),
+        supabase.from("teams").select("id", { count: "exact", head: true }).eq("event_id", id),
       ]);
       if (cancelled) return;
       setEvent(ev as EventInfo | null);
@@ -90,21 +94,25 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
   }, [id, loadMatches]);
 
   // Realtime: re-fetch matches (with joins) on any change for this event.
+  // Debounced so a burst of live score updates triggers a single refetch.
   useEffect(() => {
     if (!id) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const channel = supabase
       .channel(`matches-${id}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "matches", filter: `event_id=eq.${id}` },
         () => {
-          loadMatches();
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(() => loadMatches(), 250);
         },
       )
       .subscribe((status) => {
         setLive(status === "SUBSCRIBED");
       });
     return () => {
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [id, loadMatches]);

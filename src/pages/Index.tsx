@@ -527,7 +527,7 @@ const LiveMatchCard = memo(function LiveMatchCard({ match }: { match: MatchRow }
       </Card>
     </Link>
   );
-}
+});
 
 function TeamSide({ name, align = "left" }: { name: string; align?: "left" | "right" }) {
   return (

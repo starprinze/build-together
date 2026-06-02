@@ -75,8 +75,12 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
     let cancelled = false;
     (async () => {
       const [{ data: ev }, { count }] = await Promise.all([
-        supabase.from("events").select("*").eq("id", id).maybeSingle(),
-        supabase.from("teams").select("*", { count: "exact", head: true }).eq("event_id", id),
+        supabase
+          .from("events")
+          .select("id,name,sport,start_date,end_date,status")
+          .eq("id", id)
+          .maybeSingle(),
+        supabase.from("teams").select("id", { count: "exact", head: true }).eq("event_id", id),
       ]);
       if (cancelled) return;
       setEvent(ev as EventInfo | null);

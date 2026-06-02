@@ -1,0 +1,11 @@
+CREATE INDEX IF NOT EXISTS idx_matches_event_status ON public.matches (event_id, status);
+CREATE INDEX IF NOT EXISTS idx_matches_prediction_deadline ON public.matches (prediction_deadline);
+CREATE INDEX IF NOT EXISTS idx_matches_status_created ON public.matches (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_predictions_match_id ON public.predictions (match_id);
+CREATE INDEX IF NOT EXISTS idx_predictions_user_id ON public.predictions (user_id);
+CREATE INDEX IF NOT EXISTS idx_points_user_id ON public.points (user_id);
+CREATE INDEX IF NOT EXISTS idx_points_match_id ON public.points (match_id);
+CREATE INDEX IF NOT EXISTS idx_event_photos_event_id ON public.event_photos (event_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_teams_event_id ON public.teams (event_id);
+CREATE INDEX IF NOT EXISTS idx_match_events_match_id ON public.match_events (match_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_match_reactions_match_id ON public.match_reactions (match_id);

@@ -66,9 +66,12 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
   const load = async () => {
     const { data } = await supabase
       .from("event_photos")
-      .select("*")
+      .select(
+        "id,event_id,url,thumbnail_url,caption,width,height,cloudinary_public_id,created_at,media_type",
+      )
       .eq("event_id", eventId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(200);
     setPhotos((data as PhotoRow[]) ?? []);
     setLoading(false);
   };
@@ -222,6 +225,7 @@ export function EventGallery({ eventId, isAdmin }: { eventId: string; isAdmin: b
                       src={thumbUrl(p.thumbnail_url, p.url)}
                       alt={p.caption ?? "Event photo"}
                       loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   )}

@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import Layout from "@/components/Layout";
 import AdminGuard from "@/components/AdminGuard";
+import SuperAdminGuard from "@/components/SuperAdminGuard";
 import { lazyWithRetry } from "@/lib/moduleLoadRecovery";
 import Index from "./pages/Index";
 import Login from "./pages/Login";

@@ -78,10 +78,21 @@ export default function OrgDashboard() {
     return <div className="container py-20 text-center text-muted-foreground text-sm">Loading…</div>;
   }
 
+  if (!user) {
+    return (
+      <div className="container py-12 max-w-xl text-center space-y-4">
+        <h1 className="text-2xl font-display font-bold">Sign in to continue</h1>
+        <p className="text-muted-foreground">Create an account or sign in to start your organization.</p>
+        <Button asChild className="shadow-court"><Link to="/login?redirect=/org">Sign in</Link></Button>
+      </div>
+    );
+  }
+
   // First-run onboarding: no organization yet (and not a global super admin).
   if (!managedOrgId && !isSuperAdmin) {
     return <CreateOrganization onCreated={load} />;
   }
+
 
   if (!managedOrgId && isSuperAdmin) {
     return (

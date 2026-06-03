@@ -86,7 +86,14 @@ export default function Layout() {
                 </Link>
               </Button>
             )}
-            {isAdmin && (
+            {user && canManage && (
+              <Button asChild size="sm" variant="ghost" className="hidden md:inline-flex text-muted-foreground hover:text-foreground" title="Organizer dashboard">
+                <Link to="/org">
+                  <Building2 className="h-4 w-4" />
+                </Link>
+              </Button>
+            )}
+            {isSuperAdmin && (
               <Button asChild size="sm" variant="ghost" className="hidden md:inline-flex text-muted-foreground hover:text-foreground" title="Admin console">
                 <Link to="/admin">
                   <Shield className="h-4 w-4" />

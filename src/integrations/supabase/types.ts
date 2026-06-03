@@ -318,6 +318,38 @@ export type Database = {
           },
         ]
       }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -536,6 +568,8 @@ export type Database = {
     }
     Functions: {
       admin_exists: { Args: never; Returns: boolean }
+      can_manage_event: { Args: { _event_id: string }; Returns: boolean }
+      can_manage_org: { Args: { _org_id: string }; Returns: boolean }
       can_predict: { Args: { _match_id: string }; Returns: boolean }
       claim_first_admin: { Args: never; Returns: boolean }
       has_role: {
@@ -545,6 +579,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_org_member: { Args: { _org_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       owns_organization: { Args: { _org_id: string }; Returns: boolean }
     }
@@ -553,6 +588,7 @@ export type Database = {
       event_status: "upcoming" | "ongoing" | "completed"
       fixture_format: "single_elim" | "double_elim" | "round_robin" | "league"
       match_status: "pending" | "completed" | "bye" | "live" | "cancelled"
+      org_role: "organizer" | "staff" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -684,6 +720,7 @@ export const Constants = {
       event_status: ["upcoming", "ongoing", "completed"],
       fixture_format: ["single_elim", "double_elim", "round_robin", "league"],
       match_status: ["pending", "completed", "bye", "live", "cancelled"],
+      org_role: ["organizer", "staff", "viewer"],
     },
   },
 } as const

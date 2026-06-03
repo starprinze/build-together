@@ -72,19 +72,32 @@ function AdminTab({ to, label }: { to: string; label: string }) {
 const emptyEvent: { name: string; sport: string; start_date: string; end_date: string; status: Event["status"]; format: FixtureFormat } = { name: "", sport: "", start_date: "", end_date: "", status: "upcoming", format: "single_elim" };
 
 export default function AdminEvents() {
+  const { isSuperAdmin, managedOrgId } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Event | null>(null);
   const [form, setForm] = useState(emptyEvent);
 
   const load = async () => {
-    const { data } = await supabase.from("events").select("*").order("start_date", { ascending: false });
+    let query = supabase
+      .from("events")
+      .select("*")
+      .order("start_date", { ascending: false });
+    // Organizers only see events that belong to their organization.
+    if (!isSuperAdmin && managedOrgId) {
+      query = query.eq("organization_id", managedOrgId);
+    } else if (!isSuperAdmin && !managedOrgId) {
+      setEvents([]);
+      return;
+    }
+    const { data } = await query;
     setEvents((data as Event[]) ?? []);
   };
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuperAdmin, managedOrgId]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,7 +107,9 @@ export default function AdminEvents() {
         if (error) throw error;
         toast.success("Event updated");
       } else {
-        const { error } = await supabase.from("events").insert(form);
+        // Stamp the event with the organizer's organization so it stays isolated.
+        const payload = managedOrgId ? { ...form, organization_id: managedOrgId } : form;
+        const { error } = await supabase.from("events").insert(payload);
         if (error) throw error;
         toast.success("Event created");
       }

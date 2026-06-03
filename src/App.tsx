@@ -89,9 +89,10 @@ const App = () => (
                   <Route path="teams" element={<AdminTeams />} />
                   <Route path="matches" element={<AdminFixtures />} />
                   <Route path="fixtures" element={<AdminFixtures />} />
-                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="organizations" element={<SuperAdminGuard><AdminOrganizations /></SuperAdminGuard>} />
+                  <Route path="users" element={<SuperAdminGuard><AdminUsers /></SuperAdminGuard>} />
                   <Route path="notifications" element={<AdminNotifications />} />
-                  <Route path="settings" element={<AdminSettings />} />
+                  <Route path="settings" element={<SuperAdminGuard><AdminSettings /></SuperAdminGuard>} />
                 </Route>
               </Routes>
             </Suspense>

@@ -18,7 +18,7 @@ interface Org {
 }
 
 export default function OrgDashboard() {
-  const { managedOrgId, isSuperAdmin, orgRole, loading } = useAuth();
+  const { user, managedOrgId, isSuperAdmin, orgRole, loading } = useAuth();
   const [org, setOrg] = useState<Org | null>(null);
   const [counts, setCounts] = useState({ events: 0, teams: 0, live: 0, photos: 0 });
   const [busy, setBusy] = useState(true);

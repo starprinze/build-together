@@ -48,7 +48,7 @@ export default function OrgDashboard() {
     if (eventIds.length) {
       const [teamRes, liveRes, photoRes] = await Promise.all([
         supabase.from("teams").select("id", { count: "exact", head: true }).in("event_id", eventIds),
-        supabase.from("matches").select("id", { count: "exact", head: true }).in("event_id", eventIds).eq("status", "ongoing"),
+        supabase.from("matches").select("id", { count: "exact", head: true }).in("event_id", eventIds).eq("status", "live"),
         supabase.from("event_photos").select("id", { count: "exact", head: true }).in("event_id", eventIds),
       ]);
       teams = teamRes.count ?? 0;

@@ -89,6 +89,7 @@ export type Database = {
           format: Database["public"]["Enums"]["fixture_format"]
           id: string
           name: string
+          organization_id: string | null
           sport: string
           start_date: string
           status: Database["public"]["Enums"]["event_status"]
@@ -99,6 +100,7 @@ export type Database = {
           format?: Database["public"]["Enums"]["fixture_format"]
           id?: string
           name: string
+          organization_id?: string | null
           sport: string
           start_date: string
           status?: Database["public"]["Enums"]["event_status"]
@@ -109,11 +111,20 @@ export type Database = {
           format?: Database["public"]["Enums"]["fixture_format"]
           id?: string
           name?: string
+          organization_id?: string | null
           sport?: string
           start_date?: string
           status?: Database["public"]["Enums"]["event_status"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       match_events: {
         Row: {
@@ -306,6 +317,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          owner_id: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          owner_id?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          owner_id?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       points: {
         Row: {
@@ -501,6 +545,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      owns_organization: { Args: { _org_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"

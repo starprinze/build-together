@@ -23,6 +23,7 @@ const TeamProfile = lazyWithRetry(() => import("./pages/TeamProfile"));
 const Leaderboard = lazyWithRetry(() => import("./pages/Leaderboard"));
 const Profile = lazyWithRetry(() => import("./pages/Profile"));
 const About = lazyWithRetry(() => import("./pages/About"));
+const OrgDashboard = lazyWithRetry(() => import("./pages/org/OrgDashboard"));
 
 // Lazy-load admin entirely
 const AdminEvents = lazyWithRetry(() => import("./pages/admin/AdminEvents"));
@@ -33,6 +34,7 @@ const AdminTeams = lazyWithRetry(() => import("./pages/admin/AdminTeams"));
 const AdminFixtures = lazyWithRetry(() => import("./pages/admin/AdminFixtures"));
 const AdminSettings = lazyWithRetry(() => import("./pages/admin/AdminSettings"));
 const AdminUsers = lazyWithRetry(() => import("./pages/admin/AdminUsers"));
+const AdminOrganizations = lazyWithRetry(() => import("./pages/admin/AdminOrganizations"));
 const AdminNotifications = lazyWithRetry(() => import("./pages/admin/AdminNotifications"));
 
 const queryClient = new QueryClient();

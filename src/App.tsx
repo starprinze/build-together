@@ -70,7 +70,9 @@ const App = () => (
                   <Route path="/teams/:id" element={<TeamProfile />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/org" element={<OrgDashboard />} />
                   <Route path="*" element={<NotFound />} />
+
                 </Route>
 
                 <Route

@@ -29,6 +29,7 @@ import { StandingsTable } from "@/components/StandingsTable";
 interface Event { id: string; name: string; format: FixtureFormat }
 
 export default function AdminFixtures() {
+  const { isSuperAdmin, managedOrgId } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [eventId, setEventId] = useState<string>("");
   const [matches, setMatches] = useState<MatchRow[]>([]);
@@ -43,11 +44,17 @@ export default function AdminFixtures() {
   const [savingSummary, setSavingSummary] = useState(false);
 
   useEffect(() => {
-    supabase.from("events").select("id,name,format").order("created_at", { ascending: false }).then(({ data }) => {
+    let query = supabase
+      .from("events")
+      .select("id,name,format")
+      .order("created_at", { ascending: false });
+    if (!isSuperAdmin && managedOrgId) query = query.eq("organization_id", managedOrgId);
+    query.then(({ data }) => {
       setEvents((data as Event[]) ?? []);
       if (data && data.length && !eventId) setEventId(data[0].id);
     });
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuperAdmin, managedOrgId]);
 
   const currentEvent = events.find((e) => e.id === eventId);
 

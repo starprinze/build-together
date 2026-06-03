@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { Calendar, Trophy, Users, Plus, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,15 +36,17 @@ const FORMAT_LABELS: Record<FixtureFormat, string> = {
 };
 
 export function AdminLayout() {
+  const { isSuperAdmin } = useAuth();
   return (
     <div className="container py-8">
       <div className="flex items-center gap-2 mb-6 border-b border-border pb-3 overflow-x-auto">
         <AdminTab to="/admin" label="Events" />
         <AdminTab to="/admin/teams" label="Teams" />
         <AdminTab to="/admin/fixtures" label="Fixtures & Scores" />
-        <AdminTab to="/admin/users" label="Users" />
+        {isSuperAdmin && <AdminTab to="/admin/organizations" label="Organizations" />}
+        {isSuperAdmin && <AdminTab to="/admin/users" label="Users" />}
         <AdminTab to="/admin/notifications" label="Notifications" />
-        <AdminTab to="/admin/settings" label="Settings" />
+        {isSuperAdmin && <AdminTab to="/admin/settings" label="Settings" />}
       </div>
       <Outlet />
     </div>
@@ -69,19 +72,32 @@ function AdminTab({ to, label }: { to: string; label: string }) {
 const emptyEvent: { name: string; sport: string; start_date: string; end_date: string; status: Event["status"]; format: FixtureFormat } = { name: "", sport: "", start_date: "", end_date: "", status: "upcoming", format: "single_elim" };
 
 export default function AdminEvents() {
+  const { isSuperAdmin, managedOrgId } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Event | null>(null);
   const [form, setForm] = useState(emptyEvent);
 
   const load = async () => {
-    const { data } = await supabase.from("events").select("*").order("start_date", { ascending: false });
+    let query = supabase
+      .from("events")
+      .select("*")
+      .order("start_date", { ascending: false });
+    // Organizers only see events that belong to their organization.
+    if (!isSuperAdmin && managedOrgId) {
+      query = query.eq("organization_id", managedOrgId);
+    } else if (!isSuperAdmin && !managedOrgId) {
+      setEvents([]);
+      return;
+    }
+    const { data } = await query;
     setEvents((data as Event[]) ?? []);
   };
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuperAdmin, managedOrgId]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +107,9 @@ export default function AdminEvents() {
         if (error) throw error;
         toast.success("Event updated");
       } else {
-        const { error } = await supabase.from("events").insert(form);
+        // Stamp the event with the organizer's organization so it stays isolated.
+        const payload = managedOrgId ? { ...form, organization_id: managedOrgId } : form;
+        const { error } = await supabase.from("events").insert(payload);
         if (error) throw error;
         toast.success("Event created");
       }

@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import Layout from "@/components/Layout";
 import AdminGuard from "@/components/AdminGuard";
+import SuperAdminGuard from "@/components/SuperAdminGuard";
 import { lazyWithRetry } from "@/lib/moduleLoadRecovery";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -23,6 +24,7 @@ const TeamProfile = lazyWithRetry(() => import("./pages/TeamProfile"));
 const Leaderboard = lazyWithRetry(() => import("./pages/Leaderboard"));
 const Profile = lazyWithRetry(() => import("./pages/Profile"));
 const About = lazyWithRetry(() => import("./pages/About"));
+const OrgDashboard = lazyWithRetry(() => import("./pages/org/OrgDashboard"));
 
 // Lazy-load admin entirely
 const AdminEvents = lazyWithRetry(() => import("./pages/admin/AdminEvents"));
@@ -33,6 +35,7 @@ const AdminTeams = lazyWithRetry(() => import("./pages/admin/AdminTeams"));
 const AdminFixtures = lazyWithRetry(() => import("./pages/admin/AdminFixtures"));
 const AdminSettings = lazyWithRetry(() => import("./pages/admin/AdminSettings"));
 const AdminUsers = lazyWithRetry(() => import("./pages/admin/AdminUsers"));
+const AdminOrganizations = lazyWithRetry(() => import("./pages/admin/AdminOrganizations"));
 const AdminNotifications = lazyWithRetry(() => import("./pages/admin/AdminNotifications"));
 
 const queryClient = new QueryClient();
@@ -67,7 +70,9 @@ const App = () => (
                   <Route path="/teams/:id" element={<TeamProfile />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/org" element={<OrgDashboard />} />
                   <Route path="*" element={<NotFound />} />
+
                 </Route>
 
                 <Route
@@ -84,9 +89,10 @@ const App = () => (
                   <Route path="teams" element={<AdminTeams />} />
                   <Route path="matches" element={<AdminFixtures />} />
                   <Route path="fixtures" element={<AdminFixtures />} />
-                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="organizations" element={<SuperAdminGuard><AdminOrganizations /></SuperAdminGuard>} />
+                  <Route path="users" element={<SuperAdminGuard><AdminUsers /></SuperAdminGuard>} />
                   <Route path="notifications" element={<AdminNotifications />} />
-                  <Route path="settings" element={<AdminSettings />} />
+                  <Route path="settings" element={<SuperAdminGuard><AdminSettings /></SuperAdminGuard>} />
                 </Route>
               </Routes>
             </Suspense>

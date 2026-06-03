@@ -1,12 +1,12 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Trophy, LogOut, Award, User as UserIcon, Sun, Moon, Shield } from "lucide-react";
+import { Trophy, LogOut, Award, User as UserIcon, Sun, Moon, Shield, Building2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export default function Layout() {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isSuperAdmin, canManage, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -86,7 +86,14 @@ export default function Layout() {
                 </Link>
               </Button>
             )}
-            {isAdmin && (
+            {user && canManage && (
+              <Button asChild size="sm" variant="ghost" className="hidden md:inline-flex text-muted-foreground hover:text-foreground" title="Organizer dashboard">
+                <Link to="/org">
+                  <Building2 className="h-4 w-4" />
+                </Link>
+              </Button>
+            )}
+            {isSuperAdmin && (
               <Button asChild size="sm" variant="ghost" className="hidden md:inline-flex text-muted-foreground hover:text-foreground" title="Admin console">
                 <Link to="/admin">
                   <Shield className="h-4 w-4" />

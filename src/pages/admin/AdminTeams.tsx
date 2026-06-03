@@ -40,6 +40,7 @@ interface Team {
 }
 
 export default function AdminTeams() {
+  const { isSuperAdmin, managedOrgId } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [eventId, setEventId] = useState<string>("");
   const [teams, setTeams] = useState<Team[]>([]);
@@ -58,15 +59,17 @@ export default function AdminTeams() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    supabase
+    let query = supabase
       .from("events")
       .select("id,name")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setEvents((data as Event[]) ?? []);
-        if (data && data.length && !eventId) setEventId(data[0].id);
-      });
-  }, []);
+      .order("created_at", { ascending: false });
+    if (!isSuperAdmin && managedOrgId) query = query.eq("organization_id", managedOrgId);
+    query.then(({ data }) => {
+      setEvents((data as Event[]) ?? []);
+      if (data && data.length && !eventId) setEventId(data[0].id);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuperAdmin, managedOrgId]);
 
   const loadTeams = async () => {
     if (!eventId) return setTeams([]);

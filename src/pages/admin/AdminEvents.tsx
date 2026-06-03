@@ -36,15 +36,17 @@ const FORMAT_LABELS: Record<FixtureFormat, string> = {
 };
 
 export function AdminLayout() {
+  const { isSuperAdmin } = useAuth();
   return (
     <div className="container py-8">
       <div className="flex items-center gap-2 mb-6 border-b border-border pb-3 overflow-x-auto">
         <AdminTab to="/admin" label="Events" />
         <AdminTab to="/admin/teams" label="Teams" />
         <AdminTab to="/admin/fixtures" label="Fixtures & Scores" />
-        <AdminTab to="/admin/users" label="Users" />
+        {isSuperAdmin && <AdminTab to="/admin/organizations" label="Organizations" />}
+        {isSuperAdmin && <AdminTab to="/admin/users" label="Users" />}
         <AdminTab to="/admin/notifications" label="Notifications" />
-        <AdminTab to="/admin/settings" label="Settings" />
+        {isSuperAdmin && <AdminTab to="/admin/settings" label="Settings" />}
       </div>
       <Outlet />
     </div>

@@ -11,6 +11,7 @@ import {
   Medal,
   Target,
   Flame,
+  Camera,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,17 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+
+const PHOTO_BUCKET = "event-photos";
+
+/** Build a small thumbnail URL via storage image transforms; fall back to original. */
+function thumbUrl(path: string | null, fallback: string) {
+  if (!path) return fallback;
+  const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path, {
+    transform: { width: 400, height: 400, resize: "cover" },
+  });
+  return data.publicUrl ?? fallback;
+}
 
 interface Event {
   id: string;
@@ -46,6 +58,15 @@ interface LeaderRow {
   total_points: number;
 }
 
+interface Highlight {
+  id: string;
+  event_id: string;
+  url: string;
+  thumbnail_url: string | null;
+  caption: string | null;
+  media_type: "image" | "video" | null;
+}
+
 const eventStatusBadge: Record<Event["status"], string> = {
   upcoming: "bg-accent text-accent-foreground border-transparent",
   ongoing: "bg-success/15 text-success border-success/30",
@@ -59,6 +80,7 @@ export default function Index() {
   const [upcomingMatches, setUpcomingMatches] = useState<MatchRow[]>([]);
   const [recentResults, setRecentResults] = useState<MatchRow[]>([]);
   const [topPlayers, setTopPlayers] = useState<LeaderRow[]>([]);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,7 +89,7 @@ export default function Index() {
       const matchSelect =
         "id,event_id,match_number,round,status,score_a,score_b,team_a:team_a_id(name),team_b:team_b_id(name)";
 
-      const [evRes, liveRes, upRes, doneRes, lbRes] = await Promise.all([
+      const [evRes, liveRes, upRes, doneRes, lbRes, hlRes] = await Promise.all([
         supabase
           .from("events")
           .select("id,name,sport,start_date,end_date,status")
@@ -97,7 +119,13 @@ export default function Index() {
           .select("user_id,username,total_points")
           .order("total_points", { ascending: false })
           .limit(5),
+        supabase
+          .from("event_photos")
+          .select("id,event_id,url,thumbnail_url,caption,media_type")
+          .order("created_at", { ascending: false })
+          .limit(8),
       ]);
+
 
       if (cancelled) return;
       setEvents((evRes.data as Event[]) ?? []);
@@ -105,6 +133,7 @@ export default function Index() {
       setUpcomingMatches(((upRes.data as unknown) as MatchRow[]) ?? []);
       setRecentResults(((doneRes.data as unknown) as MatchRow[]) ?? []);
       setTopPlayers((lbRes.data as unknown as LeaderRow[]) ?? []);
+      setHighlights(((hlRes.data as unknown) as Highlight[]) ?? []);
       setLoading(false);
     })();
     return () => {
@@ -464,6 +493,62 @@ export default function Index() {
           </div>
         )}
       </section>
+
+      {/* LATEST HIGHLIGHTS */}
+      {highlights.length > 0 && (
+        <section className="container pb-12 sm:pb-16">
+          <div className="flex items-end justify-between mb-5 gap-4 flex-wrap">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-display font-bold flex items-center gap-2">
+                <Camera className="h-5 w-5 text-primary" /> Latest Highlights
+              </h2>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Fresh moments straight from the courts and pitches.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {highlights.map((h) => (
+              <Link
+                key={h.id}
+                to={`/events/${h.event_id}`}
+                className="group relative aspect-square overflow-hidden rounded-xl bg-muted shadow-card"
+              >
+                {h.media_type === "video" ? (
+                  <video
+                    src={h.url}
+                    muted
+                    playsInline
+                    preload="metadata"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <img
+                    src={thumbUrl(h.thumbnail_url, h.url)}
+                    alt={h.caption ?? "Event highlight"}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                {h.media_type === "video" && (
+                  <span className="absolute top-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                    Video
+                  </span>
+                )}
+                {h.caption && (
+                  <span className="absolute bottom-2 left-2 right-2 truncate text-xs font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                    {h.caption}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+
 
       {/* FEATURE STRIP */}
       <section className="border-t border-border bg-muted/30">

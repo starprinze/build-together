@@ -24,6 +24,7 @@ const TeamProfile = lazyWithRetry(() => import("./pages/TeamProfile"));
 const Leaderboard = lazyWithRetry(() => import("./pages/Leaderboard"));
 const Profile = lazyWithRetry(() => import("./pages/Profile"));
 const About = lazyWithRetry(() => import("./pages/About"));
+const Events = lazyWithRetry(() => import("./pages/Events"));
 const OrgDashboard = lazyWithRetry(() => import("./pages/org/OrgDashboard"));
 
 // Lazy-load admin entirely
@@ -60,7 +61,9 @@ const App = () => (
                 <Route element={<Layout />}>
                   <Route path="/" element={<Index />} />
                   <Route path="/about" element={<About />} />
+                  <Route path="/events" element={<Events />} />
                   <Route path="/matches" element={<Matches />} />
+                  <Route path="/live" element={<Matches />} />
                   <Route path="/predictions" element={<Predictions />} />
                   <Route path="/fixtures" element={<Fixtures />} />
                   <Route path="/gallery" element={<Gallery />} />

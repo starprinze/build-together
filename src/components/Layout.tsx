@@ -13,12 +13,9 @@ export default function Layout() {
 
   const publicLinks = [
     { to: "/", label: "Home" },
-    { to: "/matches", label: "Matches" },
+    { to: "/events", label: "Events" },
+    { to: "/live", label: "Live" },
     { to: "/predictions", label: "Predictions" },
-    { to: "/fixtures", label: "Fixtures" },
-    { to: "/leaderboard", label: "Leaderboard" },
-    { to: "/gallery", label: "Gallery" },
-    { to: "/about", label: "About" },
   ];
 
   const authRedirect = encodeURIComponent(`${location.pathname}${location.search}${location.hash}`);

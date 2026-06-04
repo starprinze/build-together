@@ -1,4 +1,4 @@
-import { Home, Award, ShieldCheck, LogIn, User as UserIcon } from "lucide-react";
+import { Home, Trophy, Radio, Target, LogIn, User as UserIcon } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
  * Hidden inside admin routes (admin already has its own tab strip).
  */
 export function MobileBottomNav() {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const { pathname } = useLocation();
   if (pathname.startsWith("/admin")) return null;
 
@@ -17,12 +17,12 @@ export function MobileBottomNav() {
       aria-label="Primary"
       className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
     >
-      <div className="grid grid-cols-3">
-        <NavItem to="/" end icon={Home} label="Events" />
-        <NavItem to="/leaderboard" icon={Award} label="Ranks" />
-        {isAdmin ? (
-          <NavItem to="/admin" icon={ShieldCheck} label="Admin" />
-        ) : user ? (
+      <div className="grid grid-cols-5">
+        <NavItem to="/" end icon={Home} label="Home" />
+        <NavItem to="/events" icon={Trophy} label="Events" />
+        <NavItem to="/live" icon={Radio} label="Live" />
+        <NavItem to="/predictions" icon={Target} label="Predict" />
+        {user ? (
           <NavItem to="/profile" icon={UserIcon} label="Profile" />
         ) : (
           <NavItem to="/login" icon={LogIn} label="Sign in" />

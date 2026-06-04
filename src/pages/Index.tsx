@@ -133,6 +133,7 @@ export default function Index() {
       setUpcomingMatches(((upRes.data as unknown) as MatchRow[]) ?? []);
       setRecentResults(((doneRes.data as unknown) as MatchRow[]) ?? []);
       setTopPlayers((lbRes.data as unknown as LeaderRow[]) ?? []);
+      setHighlights(((hlRes.data as unknown) as Highlight[]) ?? []);
       setLoading(false);
     })();
     return () => {

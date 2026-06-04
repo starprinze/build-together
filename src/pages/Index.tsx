@@ -494,6 +494,62 @@ export default function Index() {
         )}
       </section>
 
+      {/* LATEST HIGHLIGHTS */}
+      {highlights.length > 0 && (
+        <section className="container pb-12 sm:pb-16">
+          <div className="flex items-end justify-between mb-5 gap-4 flex-wrap">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-display font-bold flex items-center gap-2">
+                <Camera className="h-5 w-5 text-primary" /> Latest Highlights
+              </h2>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Fresh moments straight from the courts and pitches.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {highlights.map((h) => (
+              <Link
+                key={h.id}
+                to={`/events/${h.event_id}`}
+                className="group relative aspect-square overflow-hidden rounded-xl bg-muted shadow-card"
+              >
+                {h.media_type === "video" ? (
+                  <video
+                    src={h.url}
+                    muted
+                    playsInline
+                    preload="metadata"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <img
+                    src={thumbUrl(h.thumbnail_url, h.url)}
+                    alt={h.caption ?? "Event highlight"}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                {h.media_type === "video" && (
+                  <span className="absolute top-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                    Video
+                  </span>
+                )}
+                {h.caption && (
+                  <span className="absolute bottom-2 left-2 right-2 truncate text-xs font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                    {h.caption}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+
+
       {/* FEATURE STRIP */}
       <section className="border-t border-border bg-muted/30">
         <div className="container py-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">

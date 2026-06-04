@@ -80,6 +80,7 @@ export default function Index() {
   const [upcomingMatches, setUpcomingMatches] = useState<MatchRow[]>([]);
   const [recentResults, setRecentResults] = useState<MatchRow[]>([]);
   const [topPlayers, setTopPlayers] = useState<LeaderRow[]>([]);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -89,7 +89,7 @@ export default function Index() {
       const matchSelect =
         "id,event_id,match_number,round,status,score_a,score_b,team_a:team_a_id(name),team_b:team_b_id(name)";
 
-      const [evRes, liveRes, upRes, doneRes, lbRes] = await Promise.all([
+      const [evRes, liveRes, upRes, doneRes, lbRes, hlRes] = await Promise.all([
         supabase
           .from("events")
           .select("id,name,sport,start_date,end_date,status")
@@ -119,7 +119,13 @@ export default function Index() {
           .select("user_id,username,total_points")
           .order("total_points", { ascending: false })
           .limit(5),
+        supabase
+          .from("event_photos")
+          .select("id,event_id,url,thumbnail_url,caption,media_type")
+          .order("created_at", { ascending: false })
+          .limit(8),
       ]);
+
 
       if (cancelled) return;
       setEvents((evRes.data as Event[]) ?? []);

@@ -11,6 +11,7 @@ import {
   Medal,
   Target,
   Flame,
+  Camera,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,17 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+
+const PHOTO_BUCKET = "event-photos";
+
+/** Build a small thumbnail URL via storage image transforms; fall back to original. */
+function thumbUrl(path: string | null, fallback: string) {
+  if (!path) return fallback;
+  const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path, {
+    transform: { width: 400, height: 400, resize: "cover" },
+  });
+  return data.publicUrl ?? fallback;
+}
 
 interface Event {
   id: string;

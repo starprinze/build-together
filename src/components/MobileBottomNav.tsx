@@ -1,4 +1,4 @@
-import { Home, Award, ShieldCheck, LogIn, User as UserIcon } from "lucide-react";
+import { Home, Trophy, Radio, Target, LogIn, User as UserIcon } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";

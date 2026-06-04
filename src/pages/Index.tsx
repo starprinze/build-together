@@ -58,6 +58,15 @@ interface LeaderRow {
   total_points: number;
 }
 
+interface Highlight {
+  id: string;
+  event_id: string;
+  url: string;
+  thumbnail_url: string | null;
+  caption: string | null;
+  media_type: "image" | "video" | null;
+}
+
 const eventStatusBadge: Record<Event["status"], string> = {
   upcoming: "bg-accent text-accent-foreground border-transparent",
   ongoing: "bg-success/15 text-success border-success/30",

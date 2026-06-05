@@ -585,7 +585,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
-      event_status: "upcoming" | "ongoing" | "completed"
+      event_status: "upcoming" | "ongoing" | "completed" | "archived"
       fixture_format: "single_elim" | "double_elim" | "round_robin" | "league"
       match_status: "pending" | "completed" | "bye" | "live" | "cancelled"
       org_role: "organizer" | "staff" | "viewer"
@@ -717,7 +717,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      event_status: ["upcoming", "ongoing", "completed"],
+      event_status: ["upcoming", "ongoing", "completed", "archived"],
       fixture_format: ["single_elim", "double_elim", "round_robin", "league"],
       match_status: ["pending", "completed", "bye", "live", "cancelled"],
       org_role: ["organizer", "staff", "viewer"],

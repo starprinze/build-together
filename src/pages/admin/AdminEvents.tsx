@@ -127,11 +127,20 @@ export default function AdminEvents() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this event and all related teams/matches?")) return;
     const { error } = await supabase.from("events").delete().eq("id", id);
     if (error) toast.error(error.message);
     else {
-      toast.success("Deleted");
+      toast.success("Event permanently deleted");
+      load();
+    }
+  };
+
+  const handleArchive = async (ev: Event) => {
+    const next = ev.status === "archived" ? "completed" : "archived";
+    const { error } = await supabase.from("events").update({ status: next }).eq("id", ev.id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success(next === "archived" ? "Event archived" : "Event restored");
       load();
     }
   };

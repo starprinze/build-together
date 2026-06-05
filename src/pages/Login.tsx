@@ -94,7 +94,8 @@ export default function Login() {
           return;
         }
 
-        navigate(redirectTo, { replace: true });
+        const dest = await resolvePostLoginDestination();
+        navigate(dest, { replace: true });
       } else {
         const { error } = await supabase.auth.signUp({
           email,

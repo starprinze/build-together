@@ -123,7 +123,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground space-y-1">
-        <div>Built for campus tournaments · Lovable Cloud</div>
+        <div>Tournament management for every community · Lovable Cloud</div>
         <div>
           <Link to="/admin/login" className="hover:text-foreground transition-colors">
             Organizer login

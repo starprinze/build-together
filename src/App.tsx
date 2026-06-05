@@ -57,6 +57,8 @@ const App = () => (
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin/login" element={<Login />} />
+                <Route path="/super-admin/*" element={<Navigate to="/admin" replace />} />
+                <Route path="/organizer" element={<Navigate to="/org" replace />} />
 
                 <Route element={<Layout />}>
                   <Route path="/" element={<Index />} />

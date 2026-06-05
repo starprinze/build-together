@@ -28,7 +28,7 @@ interface Event {
   sport: string;
   start_date: string;
   end_date: string;
-  status: "upcoming" | "ongoing" | "completed";
+  status: "upcoming" | "ongoing" | "completed" | "archived";
   format: FixtureFormat;
 }
 

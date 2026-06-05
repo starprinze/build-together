@@ -215,6 +215,7 @@ export default function AdminEvents() {
                     <SelectItem value="upcoming">Upcoming</SelectItem>
                     <SelectItem value="ongoing">Ongoing</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -256,14 +257,61 @@ export default function AdminEvents() {
                   {ev.sport} · {new Date(ev.start_date).toLocaleDateString()} → {new Date(ev.end_date).toLocaleDateString()}
                 </p>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <div class
+="flex items-center gap-1 shrink-0">
                 <Button asChild variant="ghost" size="sm"><Link to={`/events/${ev.id}`}>View</Link></Button>
-                <Button variant="ghost" size="icon" onClick={() => openEdit(ev)}>
+                <Button variant="ghost" size="icon" onClick={() => openEdit(ev)} title="Edit">
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(ev.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleArchive(ev)}
+                  title={ev.status === "archived" ? "Restore event" : "Archive event"}
+                >
+                  {ev.status === "archived" ? (
+                    <ArchiveRestore className="h-4 w-4" />
+                  ) : (
+                    <Archive className="h-4 w-4" />
+                  )}
                 </Button>
+                {isSuperAdmin && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" title="Delete permanently">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete “{ev.name}” permanently?</AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                          <div className="space-y-2 text-left">
+                            <p>Deleting this event will remove:</p>
+                            <ul className="list-disc pl-5 space-y-0.5">
+                              <li>matches</li>
+                              <li>predictions</li>
+                              <li>leaderboard records</li>
+                              <li>gallery items</li>
+                              <li>standings</li>
+                              <li>related event data</li>
+                            </ul>
+                            <p className="font-medium text-destructive">This action cannot be undone.</p>
+                          </div>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={() => handleDelete(ev.id)}
+                        >
+                          Delete permanently
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </div>
             </Card>
           ))}

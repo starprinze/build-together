@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { Calendar, Trophy, Users, Plus, Pencil, Trash2 } from "lucide-react";
+import { Trophy, Plus, Pencil, Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
@@ -15,6 +15,10 @@ import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type FixtureFormat = "single_elim" | "double_elim" | "round_robin" | "league";
 
@@ -24,7 +28,7 @@ interface Event {
   sport: string;
   start_date: string;
   end_date: string;
-  status: "upcoming" | "ongoing" | "completed";
+  status: "upcoming" | "ongoing" | "completed" | "archived";
   format: FixtureFormat;
 }
 
@@ -123,11 +127,20 @@ export default function AdminEvents() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this event and all related teams/matches?")) return;
     const { error } = await supabase.from("events").delete().eq("id", id);
     if (error) toast.error(error.message);
     else {
-      toast.success("Deleted");
+      toast.success("Event permanently deleted");
+      load();
+    }
+  };
+
+  const handleArchive = async (ev: Event) => {
+    const next = ev.status === "archived" ? "completed" : "archived";
+    const { error } = await supabase.from("events").update({ status: next }).eq("id", ev.id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success(next === "archived" ? "Event archived" : "Event restored");
       load();
     }
   };
@@ -202,6 +215,7 @@ export default function AdminEvents() {
                     <SelectItem value="upcoming">Upcoming</SelectItem>
                     <SelectItem value="ongoing">Ongoing</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -245,12 +259,58 @@ export default function AdminEvents() {
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <Button asChild variant="ghost" size="sm"><Link to={`/events/${ev.id}`}>View</Link></Button>
-                <Button variant="ghost" size="icon" onClick={() => openEdit(ev)}>
+                <Button variant="ghost" size="icon" onClick={() => openEdit(ev)} title="Edit">
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(ev.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleArchive(ev)}
+                  title={ev.status === "archived" ? "Restore event" : "Archive event"}
+                >
+                  {ev.status === "archived" ? (
+                    <ArchiveRestore className="h-4 w-4" />
+                  ) : (
+                    <Archive className="h-4 w-4" />
+                  )}
                 </Button>
+                {isSuperAdmin && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" title="Delete permanently">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete “{ev.name}” permanently?</AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                          <div className="space-y-2 text-left">
+                            <p>Deleting this event will remove:</p>
+                            <ul className="list-disc pl-5 space-y-0.5">
+                              <li>matches</li>
+                              <li>predictions</li>
+                              <li>leaderboard records</li>
+                              <li>gallery items</li>
+                              <li>standings</li>
+                              <li>related event data</li>
+                            </ul>
+                            <p className="font-medium text-destructive">This action cannot be undone.</p>
+                          </div>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={() => handleDelete(ev.id)}
+                        >
+                          Delete permanently
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </div>
             </Card>
           ))}

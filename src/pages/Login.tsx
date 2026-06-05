@@ -20,8 +20,27 @@ export default function Login() {
   const [adminExists, setAdminExists] = useState<boolean | null>(null);
   const [claiming, setClaiming] = useState(false);
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
-  const redirectTo = searchParams.get("redirect") || "/profile";
+  const explicitRedirect = searchParams.get("redirect");
+  const redirectTo = explicitRedirect || "/profile";
   const adminMode = searchParams.get("admin") === "1" || location.pathname === "/admin/login";
+
+  // Sends the user to the dashboard that matches their role after sign-in.
+  const resolvePostLoginDestination = async (): Promise<string> => {
+    if (explicitRedirect) return explicitRedirect;
+    const { data: { user: u } } = await supabase.auth.getUser();
+    if (!u) return "/";
+    const { data: adminRow } = await supabase
+      .from("user_roles").select("role").eq("user_id", u.id).eq("role", "admin").maybeSingle();
+    if (adminRow) return "/super-admin";
+    const { data: owned } = await supabase
+      .from("organizations").select("id").eq("owner_id", u.id).limit(1).maybeSingle();
+    if (owned) return "/organizer";
+    const { data: membership } = await supabase
+      .from("organization_members").select("organization_id").eq("user_id", u.id)
+      .in("role", ["organizer", "staff"]).limit(1).maybeSingle();
+    if (membership) return "/organizer";
+    return "/";
+  };
 
   useEffect(() => {
     setMode(searchParams.get("mode") === "signup" ? "signup" : "signin");
@@ -75,7 +94,8 @@ export default function Login() {
           return;
         }
 
-        navigate(redirectTo, { replace: true });
+        const dest = await resolvePostLoginDestination();
+        navigate(dest, { replace: true });
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -121,7 +141,7 @@ export default function Login() {
         <span className="grid place-items-center h-10 w-10 rounded-lg bg-gradient-court text-primary-foreground shadow-court">
           <Trophy className="h-5 w-5" />
         </span>
-        Campus Sports
+        Sportified
       </Link>
 
       {showBootstrap && (

@@ -141,7 +141,7 @@ export default function Login() {
         <span className="grid place-items-center h-10 w-10 rounded-lg bg-gradient-court text-primary-foreground shadow-court">
           <Trophy className="h-5 w-5" />
         </span>
-        Campus Sports
+        Sportified
       </Link>
 
       {showBootstrap && (

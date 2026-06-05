@@ -20,6 +20,7 @@ export default function Gallery() {
       const { data: evts } = await supabase
         .from("events")
         .select("id, name, start_date")
+        .neq("status", "archived")
         .order("start_date", { ascending: false });
       const list = (evts as EventRow[]) ?? [];
       const withCounts = await Promise.all(

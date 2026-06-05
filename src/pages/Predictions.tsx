@@ -22,6 +22,7 @@ export default function Predictions() {
     supabase
       .from("events")
       .select("id,name,sport,status")
+      .neq("status", "archived")
       .order("start_date", { ascending: false })
       .then(({ data }) => setEvents((data as EventRow[]) ?? []));
   }, []);

@@ -35,6 +35,7 @@ export default function Events() {
     supabase
       .from("events")
       .select("id,name,sport,start_date,end_date,status")
+      .neq("status", "archived")
       .order("start_date", { ascending: false })
       .then(({ data }) => {
         if (cancelled) return;

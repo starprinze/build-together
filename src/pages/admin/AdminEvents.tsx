@@ -257,8 +257,7 @@ export default function AdminEvents() {
                   {ev.sport} · {new Date(ev.start_date).toLocaleDateString()} → {new Date(ev.end_date).toLocaleDateString()}
                 </p>
               </div>
-              <div class
-="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-1 shrink-0">
                 <Button asChild variant="ghost" size="sm"><Link to={`/events/${ev.id}`}>View</Link></Button>
                 <Button variant="ghost" size="icon" onClick={() => openEdit(ev)} title="Edit">
                   <Pencil className="h-4 w-4" />

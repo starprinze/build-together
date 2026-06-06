@@ -104,7 +104,7 @@ export function NotificationBell() {
           ) : (
             <ul className="divide-y divide-border">
               {items.map((n) => {
-                const target = n.event_id ? `/events/${n.event_id}` : "/admin";
+                const target = n.event_id ? `/events/${n.event_id}` : "/";
                 return (
                   <li key={n.id} className={n.read_at ? "" : "bg-accent/40"}>
                     <Link

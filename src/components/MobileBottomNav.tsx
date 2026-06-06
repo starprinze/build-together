@@ -10,7 +10,11 @@ import { cn } from "@/lib/utils";
 export function MobileBottomNav() {
   const { user } = useAuth();
   const { pathname } = useLocation();
-  if (pathname.startsWith("/admin")) return null;
+  if (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/super-admin") ||
+    pathname.startsWith("/organizer")
+  ) return null;
 
   return (
     <nav

@@ -25,13 +25,25 @@ const Leaderboard = lazyWithRetry(() => import("./pages/Leaderboard"));
 const Profile = lazyWithRetry(() => import("./pages/Profile"));
 const About = lazyWithRetry(() => import("./pages/About"));
 const Events = lazyWithRetry(() => import("./pages/Events"));
-const OrgDashboard = lazyWithRetry(() => import("./pages/org/OrgDashboard"));
 
-// Lazy-load admin entirely
+// Role-specific layouts (independent navigation per experience)
+const SuperAdminLayout = lazyWithRetry(() => import("./components/layouts/SuperAdminLayout"));
+const OrganizerLayout = lazyWithRetry(() => import("./components/layouts/OrganizerLayout"));
+
+// Super admin pages
+const SuperAdminDashboard = lazyWithRetry(() => import("./pages/super-admin/SuperAdminDashboard"));
+const SuperAdminAnalytics = lazyWithRetry(() => import("./pages/super-admin/SuperAdminAnalytics"));
+const SuperAdminReports = lazyWithRetry(() => import("./pages/super-admin/SuperAdminReports"));
+const RolesPermissions = lazyWithRetry(() => import("./pages/super-admin/RolesPermissions"));
+
+// Organizer pages
+const OrgDashboard = lazyWithRetry(() => import("./pages/org/OrgDashboard"));
+const OrgSettings = lazyWithRetry(() => import("./pages/org/OrgSettings"));
+const OrgGallery = lazyWithRetry(() => import("./pages/org/OrgGallery"));
+const OrgPredictions = lazyWithRetry(() => import("./pages/org/OrgPredictions"));
+
+// Shared management pages (org-scoped for organizers, global for super admins)
 const AdminEvents = lazyWithRetry(() => import("./pages/admin/AdminEvents"));
-const AdminLayout = lazyWithRetry(() =>
-  import("./pages/admin/AdminEvents").then((m) => ({ default: m.AdminLayout })),
-);
 const AdminTeams = lazyWithRetry(() => import("./pages/admin/AdminTeams"));
 const AdminFixtures = lazyWithRetry(() => import("./pages/admin/AdminFixtures"));
 const AdminSettings = lazyWithRetry(() => import("./pages/admin/AdminSettings"));
@@ -57,9 +69,8 @@ const App = () => (
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin/login" element={<Login />} />
-                <Route path="/super-admin/*" element={<Navigate to="/admin" replace />} />
-                <Route path="/organizer" element={<Navigate to="/org" replace />} />
 
+                {/* ----- Viewer experience (public) ----- */}
                 <Route element={<Layout />}>
                   <Route path="/" element={<Index />} />
                   <Route path="/about" element={<About />} />
@@ -75,30 +86,60 @@ const App = () => (
                   <Route path="/teams/:id" element={<TeamProfile />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/profile" element={<Profile />} />
-                  <Route path="/org" element={<OrgDashboard />} />
                   <Route path="*" element={<NotFound />} />
-
                 </Route>
 
+                {/* ----- Super Admin experience ----- */}
                 <Route
-                  path="/admin"
+                  path="/super-admin"
+                  element={
+                    <SuperAdminGuard>
+                      <SuperAdminLayout />
+                    </SuperAdminGuard>
+                  }
+                >
+                  <Route index element={<SuperAdminDashboard />} />
+                  <Route path="organizations" element={<AdminOrganizations />} />
+                  <Route path="events" element={<AdminEvents />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="roles" element={<RolesPermissions />} />
+                  <Route path="analytics" element={<SuperAdminAnalytics />} />
+                  <Route path="reports" element={<SuperAdminReports />} />
+                  <Route path="notifications" element={<AdminNotifications />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                </Route>
+
+                {/* ----- Organizer experience ----- */}
+                <Route
+                  path="/organizer"
                   element={
                     <AdminGuard>
-                      <AdminLayout />
+                      <OrganizerLayout />
                     </AdminGuard>
                   }
                 >
-                  <Route index element={<Navigate to="dashboard" replace />} />
-                  <Route path="dashboard" element={<AdminEvents />} />
+                  <Route index element={<OrgDashboard />} />
                   <Route path="events" element={<AdminEvents />} />
                   <Route path="teams" element={<AdminTeams />} />
                   <Route path="matches" element={<AdminFixtures />} />
-                  <Route path="fixtures" element={<AdminFixtures />} />
-                  <Route path="organizations" element={<SuperAdminGuard><AdminOrganizations /></SuperAdminGuard>} />
-                  <Route path="users" element={<SuperAdminGuard><AdminUsers /></SuperAdminGuard>} />
+                  <Route path="predictions" element={<OrgPredictions />} />
+                  <Route path="gallery" element={<OrgGallery />} />
                   <Route path="notifications" element={<AdminNotifications />} />
-                  <Route path="settings" element={<SuperAdminGuard><AdminSettings /></SuperAdminGuard>} />
+                  <Route path="settings" element={<OrgSettings />} />
                 </Route>
+
+                {/* ----- Backward-compatible redirects ----- */}
+                <Route path="/admin" element={<Navigate to="/super-admin" replace />} />
+                <Route path="/admin/dashboard" element={<Navigate to="/super-admin" replace />} />
+                <Route path="/admin/events" element={<Navigate to="/super-admin/events" replace />} />
+                <Route path="/admin/teams" element={<Navigate to="/organizer/teams" replace />} />
+                <Route path="/admin/fixtures" element={<Navigate to="/organizer/matches" replace />} />
+                <Route path="/admin/matches" element={<Navigate to="/organizer/matches" replace />} />
+                <Route path="/admin/organizations" element={<Navigate to="/super-admin/organizations" replace />} />
+                <Route path="/admin/users" element={<Navigate to="/super-admin/users" replace />} />
+                <Route path="/admin/notifications" element={<Navigate to="/super-admin/notifications" replace />} />
+                <Route path="/admin/settings" element={<Navigate to="/super-admin/settings" replace />} />
+                <Route path="/org" element={<Navigate to="/organizer" replace />} />
               </Routes>
             </Suspense>
           </AuthProvider>

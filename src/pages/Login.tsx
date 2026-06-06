@@ -78,7 +78,7 @@ export default function Login() {
 
             if (role) {
               await refreshRole();
-              navigate("/admin/dashboard", { replace: true });
+              navigate("/super-admin", { replace: true });
               return;
             }
           }
@@ -121,7 +121,7 @@ export default function Login() {
       if (data === true) {
         await refreshRole();
         toast.success("You are now the first admin");
-        navigate("/admin/dashboard");
+        navigate("/super-admin");
       } else {
         toast.info("An admin already exists. Ask them to grant you access.");
         await refreshAdminExists();

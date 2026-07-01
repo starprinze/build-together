@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Trophy, Users, Swords, Target,
+  LayoutDashboard, Trophy, Users, Swords, Radio, Target, Medal,
   Image as ImageIcon, Bell, Building2,
 } from "lucide-react";
 import DashboardShell, { type DashboardNavItem } from "./DashboardShell";
@@ -10,7 +10,9 @@ const navItems: DashboardNavItem[] = [
   { to: "/organizer/events", label: "My Events", icon: Trophy },
   { to: "/organizer/teams", label: "Teams", icon: Users },
   { to: "/organizer/matches", label: "Matches", icon: Swords },
+  { to: "/organizer/live", label: "Live Control", icon: Radio },
   { to: "/organizer/predictions", label: "Predictions", icon: Target },
+  { to: "/organizer/leaderboard", label: "Leaderboard", icon: Medal },
   { to: "/organizer/gallery", label: "Gallery", icon: ImageIcon },
   { to: "/organizer/notifications", label: "Notifications", icon: Bell },
   { to: "/organizer/settings", label: "Organization Settings", icon: Building2 },

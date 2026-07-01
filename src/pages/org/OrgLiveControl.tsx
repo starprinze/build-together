@@ -107,7 +107,7 @@ export default function OrgLiveControl() {
     setScoreB(m.score_b != null ? String(m.score_b) : "");
   };
 
-  const setStatus = async (m: LiveMatch, status: string) => {
+  const setStatus = async (m: LiveMatch, status: MatchStatus) => {
     setSaving(true);
     const { error } = await supabase.from("matches").update({ status }).eq("id", m.id);
     if (error) toast.error(error.message);
@@ -121,7 +121,11 @@ export default function OrgLiveControl() {
     setSaving(true);
     const a = scoreA !== "" ? Number(scoreA) : null;
     const b = scoreB !== "" ? Number(scoreB) : null;
-    const payload: Record<string, unknown> = { score_a: a, score_b: b };
+    const payload: {
+      score_a: number | null;
+      score_b: number | null;
+      winner_id?: string | null;
+    } = { score_a: a, score_b: b };
     if (active.status === "completed") {
       payload.winner_id =
         a != null && b != null
@@ -322,7 +326,7 @@ function MatchRow({
   match: LiveMatch;
   onOpen: (m: LiveMatch) => void;
   onFinish: (m: LiveMatch) => void;
-  onStatus: (m: LiveMatch, status: string) => void;
+  onStatus: (m: LiveMatch, status: MatchStatus) => void;
   saving: boolean;
 }) {
   const isLive = match.status === "live";

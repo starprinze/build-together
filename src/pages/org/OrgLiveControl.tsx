@@ -23,6 +23,8 @@ import { Radio, RefreshCw, RotateCcw, Play, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+type MatchStatus = "bye" | "cancelled" | "completed" | "live" | "pending";
+
 interface TeamRef {
   id: string;
   name: string;

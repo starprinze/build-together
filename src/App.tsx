@@ -73,6 +73,8 @@ const App = () => (
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
                 {/* ----- Viewer experience (public) ----- */}
                 <Route element={<Layout />}>
@@ -126,7 +128,9 @@ const App = () => (
                   <Route path="events" element={<AdminEvents />} />
                   <Route path="teams" element={<AdminTeams />} />
                   <Route path="matches" element={<AdminFixtures />} />
+                  <Route path="live" element={<OrgLiveControl />} />
                   <Route path="predictions" element={<OrgPredictions />} />
+                  <Route path="leaderboard" element={<OrgLeaderboard />} />
                   <Route path="gallery" element={<OrgGallery />} />
                   <Route path="notifications" element={<AdminNotifications />} />
                   <Route path="settings" element={<OrgSettings />} />

@@ -13,6 +13,8 @@ import { lazyWithRetry } from "@/lib/moduleLoadRecovery";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 // Lazy-load secondary public pages
 const EventBracket = lazyWithRetry(() => import("./pages/EventBracket"));
@@ -41,6 +43,8 @@ const OrgDashboard = lazyWithRetry(() => import("./pages/org/OrgDashboard"));
 const OrgSettings = lazyWithRetry(() => import("./pages/org/OrgSettings"));
 const OrgGallery = lazyWithRetry(() => import("./pages/org/OrgGallery"));
 const OrgPredictions = lazyWithRetry(() => import("./pages/org/OrgPredictions"));
+const OrgLiveControl = lazyWithRetry(() => import("./pages/org/OrgLiveControl"));
+const OrgLeaderboard = lazyWithRetry(() => import("./pages/org/OrgLeaderboard"));
 
 // Shared management pages (org-scoped for organizers, global for super admins)
 const AdminEvents = lazyWithRetry(() => import("./pages/admin/AdminEvents"));

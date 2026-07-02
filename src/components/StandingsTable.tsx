@@ -87,7 +87,9 @@ export function StandingsTable({
         </TableBody>
       </Table>
       <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border bg-muted/20">
-        Win = 3 pts · Loss = 0 pts · Sorted by Points, then point differential.
+        Win = {profile.standingsPoints.win} pts
+        {profile.allowsDraw && ` · Draw = ${profile.standingsPoints.draw} pts`} · Loss ={" "}
+        {profile.standingsPoints.loss} pts · Sorted by Points, then tie-breakers.
       </div>
     </Card>
   );

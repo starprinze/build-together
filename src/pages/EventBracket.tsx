@@ -14,6 +14,7 @@ import { MatchReactions } from "@/components/MatchReactions";
 import { MatchPrediction } from "@/components/MatchPrediction";
 import { EventLeaderboard } from "@/components/EventLeaderboard";
 import { computeStandings } from "@/lib/standings";
+import { getSportProfile } from "@/lib/sports";
 import { lazyWithRetry } from "@/lib/moduleLoadRecovery";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";

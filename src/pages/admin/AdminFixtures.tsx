@@ -26,7 +26,7 @@ import {
 import { computeStandings } from "@/lib/standings";
 import { StandingsTable } from "@/components/StandingsTable";
 
-interface Event { id: string; name: string; format: FixtureFormat }
+interface Event { id: string; name: string; format: FixtureFormat; sport?: string }
 
 export default function AdminFixtures() {
   const { isSuperAdmin, managedOrgId } = useAuth();

@@ -240,7 +240,7 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
 
 
         <TabsContent value="standings" className="mt-0">
-          <StandingsTable rows={standings} />
+          <StandingsTable rows={standings} profile={sportProfile} />>
         </TabsContent>
 
         <TabsContent value="gallery" className="mt-0">

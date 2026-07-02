@@ -185,7 +185,16 @@ export default function AdminEvents() {
               </div>
               <div>
                 <Label>Sport</Label>
-                <Input required value={form.sport} onChange={(e) => setForm({ ...form, sport: e.target.value })} />
+                <Select value={form.sport} onValueChange={(v) => setForm({ ...form, sport: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select a sport" /></SelectTrigger>
+                  <SelectContent>
+                    {listSportProfiles().map((p) => (
+                      <SelectItem key={p.id} value={p.name}>
+                        {p.icon} {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

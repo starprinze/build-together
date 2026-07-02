@@ -1,4 +1,5 @@
 import type { MatchRow } from "@/components/BracketView";
+import { DEFAULT_SPORT_PROFILE, type SportProfile } from "@/lib/sports";
 
 export interface StandingRow {
   teamId: string;
@@ -6,18 +7,23 @@ export interface StandingRow {
   department?: string;
   played: number;
   wins: number;
+  draws: number;
   losses: number;
   pointsFor: number;
   pointsAgainst: number;
   diff: number;
-  points: number; // 3 per win, 0 per loss
+  points: number; // driven by the sport's standingsPoints config
 }
 
 /**
  * Compute standings for an event from its matches.
- * Byes do not count toward W/L or points.
+ * Points, draw handling and tie-breakers are driven by the sport profile so
+ * the calculation is fully sport-agnostic. Byes do not count toward records.
  */
-export function computeStandings(matches: MatchRow[]): StandingRow[] {
+export function computeStandings(
+  matches: MatchRow[],
+  profile: SportProfile = DEFAULT_SPORT_PROFILE,
+): StandingRow[] {
   const map = new Map<string, StandingRow>();
 
   const ensure = (team: { id: string; name: string; department?: string } | null) => {

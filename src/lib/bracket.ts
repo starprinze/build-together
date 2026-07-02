@@ -153,6 +153,32 @@ function buildRoundRobin(eventId: string, teamIds: string[], legs: 1 | 2): Row[]
   return rows;
 }
 
+// ---------- SWISS SYSTEM ----------
+// Only round 1 is generated up front. Subsequent Swiss rounds are paired from
+// current standings after the previous round completes (organizer-triggered).
+function buildSwissRound1(eventId: string, teamIds: string[]): Row[] {
+  const teams = [...teamIds];
+  if (teams.length % 2 === 1) teams.push("__BYE__");
+  const rows: Row[] = [];
+  let matchNo = 1;
+  for (let i = 0; i < teams.length; i += 2) {
+    const a = teams[i];
+    const b = teams[i + 1];
+    const isBye = a === "__BYE__" || b === "__BYE__";
+    rows.push({
+      event_id: eventId,
+      round: 1,
+      match_number: matchNo++,
+      team_a_id: a === "__BYE__" ? null : a,
+      team_b_id: b === "__BYE__" ? null : b,
+      winner_id: isBye ? (a === "__BYE__" ? b : a) : null,
+      status: isBye ? "bye" : "pending",
+      bracket: "main",
+    });
+  }
+  return rows;
+}
+
 // ---------- DOUBLE ELIMINATION ----------
 // Generates winners + losers + grand final scaffolding. Teams populate winners R1; advancement
 // is handled by advanceWinner which now also drops losers into the losers bracket.

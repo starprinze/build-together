@@ -1,43 +1,58 @@
-# Sportified → Multi-Tenant Platform Refactor
+# Sportified v17 — Phased Completion Plan
 
-This is a large, multi-phase effort. Shipping all 6 phases in one pass would be risky (big DB migrations + broad code rewrites at once). I propose to deliver it in safe, verifiable stages, starting with **performance** since you said it takes priority.
+This spec covers 19 subsystems. Building them all in one pass would be unstable and would risk breaking the working platform. Instead this is sequenced into phases, each independently shippable, backward-compatible, and testable. Nothing existing is renamed or removed — everything is **additive**.
 
-## Stage 1 — Performance (priority, no schema risk)
-The app already lazy-loads routes via `lazyWithRetry`. I'll extend that and fix data/query/realtime costs.
+Current foundation already live: multi-tenant orgs, events, teams, matches, single/double elim + round robin + league fixtures, live control, predictions, event leaderboards, gallery, notifications, roles/RLS.
 
-- **Queries**: replace `select('*')` with explicit columns on Index, Leaderboard, EventBracket, Matches, Predictions, galleries; add `.limit()`/pagination on leaderboard and gallery.
-- **Realtime**: subscribe only to currently-live matches; ensure every channel unsubscribes on unmount; debounce burst updates so scores don't trigger cascade rerenders.
-- **Memoization**: `useMemo`/`useCallback` on derived bracket/standings/leaderboard data; `React.memo` on list rows (match cards, leaderboard rows, gallery tiles).
-- **Gallery**: lazy `loading="lazy"` + decode async; windowing for large sets.
-- **Leaderboard**: cache via React Query with sensible `staleTime`; avoid recompute on every render.
-- **Indexes** (migration): `matches(event_id, status)`, `predictions(match_id)`, `predictions(user_id)`, `points(user_id)`, `matches(prediction_deadline)`, `event_photos(event_id)`, `teams(event_id)`.
+---
 
-## Stage 2 — Multi-tenant foundation (DB migration, needs approval)
-- New `organizations` table: `id, name, slug, logo_url, description, owner_id, created_at` + GRANTs + RLS.
-- Add `organization_id` to `events` (backfill existing events into a default "Sportified" org so nothing is orphaned).
-- Helper functions: `is_super_admin()`, `owns_organization(org_id)`, `is_org_member(org_id)`.
+## Phase 1 — Universal Sport Engine (foundation for everything)
+The keystone. Makes the platform sport-agnostic via a config-driven registry. **No football logic hardcoded.**
 
-## Stage 3 — Role system (DB + guards)
-- Extend `app_role` enum to `super_admin | organizer | staff | viewer` (keep `admin` mapped to super_admin during transition).
-- Add `organization_members(org_id, user_id, role)` so roles are scoped per organization (org admin/staff), with super_admin global.
-- Update `useAuth` to expose `role`, `isSuperAdmin`, `organizationId`; new `RoleGuard` replacing/extending `AdminGuard`.
+- New `src/lib/sports/` module: a `SportProfile` type + registry for Football, Basketball, Volleyball, Handball, Tennis, Table Tennis, Badminton, Athletics, Chess, Esports.
+- Each profile declares: scoring rules, match periods, overtime/tiebreak rules, winner determination, standings points (win/draw/loss), and which timeline event types are relevant.
+- `getSportProfile(sport)` helper with a safe default so existing events keep working.
+- Wire standings (`src/lib/standings.ts`) and winner determination (`src/lib/bracket.ts`) to read from the profile instead of assuming football.
+- Sport picker in event creation reads from the registry.
 
-## Stage 4 — Separate dashboards
-- `/admin` (super admin): Analytics, Organizations, Events, Users, Moderation, Featured, Reports, Platform Settings.
-- `/org` (organizer): Dashboard, Events, Teams, Matches, Predictions, Gallery, Notifications, Org Settings.
-- Staff sees a reduced org dashboard (scores + media only).
+Deliverable: any sport selectable; standings/winner logic driven by sport config. Existing events unaffected.
 
-## Stage 5 — Event ecosystems
-- Confirm predictions/galleries/leaderboards are all filtered by `event_id` end-to-end (EventBracket already centralizes this); remove any global mixing.
+## Phase 2 — Competition Formats + Fixture Management
+- Extend `fixture_format` enum + `bracket.ts` generators: Group Stage + Knockout, Swiss, Custom. (Single/double elim, round robin, league already exist.)
+- Organizer fixture editor: manual create/edit/delete, swap teams, swap home/away, assign venue/time, lock fixtures, safe regenerate (respects locks). Drag-and-drop rearrange.
+- DB additions (additive columns on `matches`): `venue`, `scheduled_at`, `locked`, `group_id`, `leg`.
 
-## Stage 6 — Onboarding + Quick Actions
-- First-login organizer wizard: Create Org → Create Event → Add Teams → Generate Fixtures → Start Match.
-- Quick Actions panel on the organizer dashboard.
+## Phase 3 — Group Stage + Knockout Engine
+- New `groups` table (org-isolated, RLS). Unlimited custom-named groups, auto standings, manual correction (admin), qualification rules (top N / best thirds / manual).
+- Knockout engine: seeded/random/manual draw, byes, walkovers, manual advancement, third-place playoff, sport-specific extra-time/penalty resolution.
+
+## Phase 4 — Match Lifecycle + Live Match Center
+- Extend `match_status` enum: ready, halftime, break, extra_time, penalties, walkover, postponed, abandoned (keep existing pending/live/completed/cancelled).
+- Live center: sport-adaptive event entry (goals/sets/quarters/cards/fouls/timeouts/subs/possession) driven by Phase 1 profiles, realtime.
+
+## Phase 5 — Predictions, Leaderboards, Players, Statistics
+- Predictions: history, accuracy %, streaks, badges, season rankings; guard against duplicate point awards (already partly handled by unique constraint).
+- Leaderboards: team / prediction / season / org / global, recalculated on match completion.
+- Optional `players` table: squad, jersey #, position, photo, captain. Sport-adaptive stats.
+- Modular statistics engine keyed off sport profile.
+
+## Phase 6 — Org Management, Media, Notifications, Analytics, Hardening
+- Granular org roles (referee, media, volunteer) on existing `organization_members`.
+- Media center extensions (videos, albums, highlights, featured) on existing gallery/Cloudinary.
+- Notification types (announcements, reminders).
+- Analytics dashboards (participation, predictions, engagement).
+- Security pass (RLS/org isolation/route guards), performance pass (query columns, caching, realtime debounce, lazy loading), full typecheck + build.
+
+## AI Readiness (cross-cutting)
+No placeholder features. Clean extension points only: a `match_events`/`summary` data shape rich enough for future AI reports, and a service-layer seam where AI modules can later plug in.
+
+---
 
 ## Technical notes
-- Stages 2–3 change the schema and role semantics, so I'll run those migrations one at a time and verify the app still loads between each.
-- Existing data is preserved: events backfill into a default org; current admins become super_admins.
-- I recommend doing **Stage 1 now** (immediate, low-risk speed wins), then proceeding to Stage 2 once you confirm.
+- All enum extensions use `ALTER TYPE ... ADD VALUE` (non-destructive).
+- All new tables follow the GRANT + RLS + policy pattern, org-isolated via existing `can_manage_org`/`can_manage_event`.
+- Sport profiles are pure TS config (no DB migration needed for Phase 1) — the fastest path to sport-agnostic behavior.
+- Each phase ends with typecheck + targeted tests before moving on.
 
-## Proposed first step
-Start with Stage 1 (performance) plus the Stage 1 index migration. Confirm and I'll begin.
+## Recommendation
+Approve this plan and I'll start with **Phase 1 (Universal Sport Engine)** now, since every other phase depends on it. Phases 2–6 will each come back for review as they land. If you'd rather I jump to a specific phase first (e.g. Fixture Management), tell me which.

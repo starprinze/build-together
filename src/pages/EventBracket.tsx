@@ -14,6 +14,7 @@ import { MatchReactions } from "@/components/MatchReactions";
 import { MatchPrediction } from "@/components/MatchPrediction";
 import { EventLeaderboard } from "@/components/EventLeaderboard";
 import { computeStandings } from "@/lib/standings";
+import { getSportProfile } from "@/lib/sports";
 import { lazyWithRetry } from "@/lib/moduleLoadRecovery";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -124,7 +125,8 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
   const totalRounds = matches.length ? Math.max(...matches.map((m) => m.round)) : 0;
   const finalMatch = matches.find((m) => m.round === totalRounds);
   const champion = totalRounds > 0 && finalMatch?.status === "completed" ? finalMatch.winner : null;
-  const standings = computeStandings(matches);
+  const sportProfile = getSportProfile(event.sport);
+  const standings = computeStandings(matches, sportProfile);
   const matchIds = matches.map((m) => m.id);
   const predictableMatches = matches.filter((m) => m.team_a && m.team_b);
 
@@ -238,7 +240,7 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
 
 
         <TabsContent value="standings" className="mt-0">
-          <StandingsTable rows={standings} />
+          <StandingsTable rows={standings} profile={sportProfile} />
         </TabsContent>
 
         <TabsContent value="gallery" className="mt-0">

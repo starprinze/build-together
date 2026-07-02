@@ -1,6 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type FixtureFormat = "single_elim" | "double_elim" | "round_robin" | "league";
+export type FixtureFormat =
+  | "single_elim"
+  | "double_elim"
+  | "round_robin"
+  | "league"
+  | "group_knockout"
+  | "swiss"
+  | "custom";
 
 function nextPowerOfTwo(n: number): number {
   let p = 1;
@@ -46,6 +53,15 @@ export async function generateFixtures(
     rows = buildDoubleElim(eventId, shuffled);
   } else if (format === "round_robin" || format === "league") {
     rows = buildRoundRobin(eventId, shuffled, format === "league" ? 2 : 1);
+  } else if (format === "swiss") {
+    rows = buildSwissRound1(eventId, shuffled);
+  } else if (format === "custom") {
+    // Custom tournaments are built manually by the organizer — no auto-generation.
+    rows = [];
+  } else if (format === "group_knockout") {
+    // Group stage is generated via the group manager (Phase 3). Fall back to a
+    // single round robin so the format is never left empty.
+    rows = buildRoundRobin(eventId, shuffled, 1);
   }
 
   const { error } = await supabase.from("matches").insert(rows);
@@ -133,6 +149,32 @@ function buildRoundRobin(eventId: string, teamIds: string[], legs: 1 | 2): Row[]
       // rotate (keep first fixed)
       local = [local[0], local[n - 1], ...local.slice(1, n - 1)];
     }
+  }
+  return rows;
+}
+
+// ---------- SWISS SYSTEM ----------
+// Only round 1 is generated up front. Subsequent Swiss rounds are paired from
+// current standings after the previous round completes (organizer-triggered).
+function buildSwissRound1(eventId: string, teamIds: string[]): Row[] {
+  const teams = [...teamIds];
+  if (teams.length % 2 === 1) teams.push("__BYE__");
+  const rows: Row[] = [];
+  let matchNo = 1;
+  for (let i = 0; i < teams.length; i += 2) {
+    const a = teams[i];
+    const b = teams[i + 1];
+    const isBye = a === "__BYE__" || b === "__BYE__";
+    rows.push({
+      event_id: eventId,
+      round: 1,
+      match_number: matchNo++,
+      team_a_id: a === "__BYE__" ? null : a,
+      team_b_id: b === "__BYE__" ? null : b,
+      winner_id: isBye ? (a === "__BYE__" ? b : a) : null,
+      status: isBye ? "bye" : "pending",
+      bracket: "main",
+    });
   }
   return rows;
 }

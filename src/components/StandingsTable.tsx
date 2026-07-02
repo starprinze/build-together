@@ -3,9 +3,16 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trophy } from "lucide-react";
 import type { StandingRow } from "@/lib/standings";
+import { DEFAULT_SPORT_PROFILE, type SportProfile } from "@/lib/sports";
 import { cn } from "@/lib/utils";
 
-export function StandingsTable({ rows }: { rows: StandingRow[] }) {
+export function StandingsTable({
+  rows,
+  profile = DEFAULT_SPORT_PROFILE,
+}: {
+  rows: StandingRow[];
+  profile?: SportProfile;
+}) {
   if (rows.length === 0) {
     return (
       <Card className="p-12 text-center">
@@ -25,6 +32,7 @@ export function StandingsTable({ rows }: { rows: StandingRow[] }) {
             <TableHead>Team</TableHead>
             <TableHead className="text-center">P</TableHead>
             <TableHead className="text-center">W</TableHead>
+            {profile.allowsDraw && <TableHead className="text-center">D</TableHead>}
             <TableHead className="text-center">L</TableHead>
             <TableHead className="text-center hidden sm:table-cell">PF</TableHead>
             <TableHead className="text-center hidden sm:table-cell">PA</TableHead>
@@ -50,6 +58,11 @@ export function StandingsTable({ rows }: { rows: StandingRow[] }) {
               <TableCell className="text-center font-mono tabular-nums text-primary font-semibold">
                 {r.wins}
               </TableCell>
+              {profile.allowsDraw && (
+                <TableCell className="text-center font-mono tabular-nums text-muted-foreground">
+                  {r.draws}
+                </TableCell>
+              )}
               <TableCell className="text-center font-mono tabular-nums text-muted-foreground">
                 {r.losses}
               </TableCell>
@@ -74,7 +87,9 @@ export function StandingsTable({ rows }: { rows: StandingRow[] }) {
         </TableBody>
       </Table>
       <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border bg-muted/20">
-        Win = 3 pts · Loss = 0 pts · Sorted by Points, then point differential.
+        Win = {profile.standingsPoints.win} pts
+        {profile.allowsDraw && ` · Draw = ${profile.standingsPoints.draw} pts`} · Loss ={" "}
+        {profile.standingsPoints.loss} pts · Sorted by Points, then tie-breakers.
       </div>
     </Card>
   );

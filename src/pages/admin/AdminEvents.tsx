@@ -11,6 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { listSportProfiles } from "@/lib/sports";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
@@ -20,7 +21,14 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-type FixtureFormat = "single_elim" | "double_elim" | "round_robin" | "league";
+type FixtureFormat =
+  | "single_elim"
+  | "double_elim"
+  | "round_robin"
+  | "league"
+  | "group_knockout"
+  | "swiss"
+  | "custom";
 
 interface Event {
   id: string;
@@ -37,6 +45,9 @@ const FORMAT_LABELS: Record<FixtureFormat, string> = {
   double_elim: "Double elimination",
   round_robin: "Round robin",
   league: "League (home & away)",
+  group_knockout: "Group stage + knockout",
+  swiss: "Swiss system",
+  custom: "Custom tournament",
 };
 
 export function AdminLayout() {
@@ -185,7 +196,16 @@ export default function AdminEvents() {
               </div>
               <div>
                 <Label>Sport</Label>
-                <Input required value={form.sport} onChange={(e) => setForm({ ...form, sport: e.target.value })} />
+                <Select value={form.sport} onValueChange={(v) => setForm({ ...form, sport: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select a sport" /></SelectTrigger>
+                  <SelectContent>
+                    {listSportProfiles().map((p) => (
+                      <SelectItem key={p.id} value={p.name}>
+                        {p.icon} {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

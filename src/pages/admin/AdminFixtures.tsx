@@ -24,9 +24,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { computeStandings } from "@/lib/standings";
+import { getSportProfile } from "@/lib/sports";
 import { StandingsTable } from "@/components/StandingsTable";
 
-interface Event { id: string; name: string; format: FixtureFormat }
+interface Event { id: string; name: string; format: FixtureFormat; sport?: string }
 
 export default function AdminFixtures() {
   const { isSuperAdmin, managedOrgId } = useAuth();
@@ -46,7 +47,7 @@ export default function AdminFixtures() {
   useEffect(() => {
     let query = supabase
       .from("events")
-      .select("id,name,format")
+      .select("id,name,format,sport")
       .order("created_at", { ascending: false });
     if (!isSuperAdmin && managedOrgId) query = query.eq("organization_id", managedOrgId);
     query.then(({ data }) => {
@@ -204,7 +205,8 @@ export default function AdminFixtures() {
     }
   };
 
-  const standings = computeStandings(matches);
+  const sportProfile = getSportProfile(currentEvent?.sport);
+  const standings = computeStandings(matches, sportProfile);
   const showStandings =
     currentEvent?.format === "round_robin" || currentEvent?.format === "league";
 
@@ -254,7 +256,7 @@ export default function AdminFixtures() {
           {showStandings && (
             <Card className="p-4 mb-6 shadow-card">
               <h2 className="text-lg font-display font-semibold mb-3">Standings</h2>
-              <StandingsTable rows={standings} />
+              <StandingsTable rows={standings} profile={sportProfile} />
             </Card>
           )}
           <BracketView matches={matches} onScoreClick={openScore} />

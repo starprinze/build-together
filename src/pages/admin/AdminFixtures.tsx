@@ -256,7 +256,7 @@ export default function AdminFixtures() {
           {showStandings && (
             <Card className="p-4 mb-6 shadow-card">
               <h2 className="text-lg font-display font-semibold mb-3">Standings</h2>
-              <StandingsTable rows={standings} />
+              <StandingsTable rows={standings} profile={sportProfile} />
             </Card>
           )}
           <BracketView matches={matches} onScoreClick={openScore} />

@@ -22,6 +22,7 @@ describe("StandingsTable", () => {
         department: "CS",
         played: 2,
         wins: 2,
+        draws: 0,
         losses: 0,
         pointsFor: 30,
         pointsAgainst: 10,

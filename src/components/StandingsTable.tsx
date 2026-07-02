@@ -3,9 +3,16 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trophy } from "lucide-react";
 import type { StandingRow } from "@/lib/standings";
+import { DEFAULT_SPORT_PROFILE, type SportProfile } from "@/lib/sports";
 import { cn } from "@/lib/utils";
 
-export function StandingsTable({ rows }: { rows: StandingRow[] }) {
+export function StandingsTable({
+  rows,
+  profile = DEFAULT_SPORT_PROFILE,
+}: {
+  rows: StandingRow[];
+  profile?: SportProfile;
+}) {
   if (rows.length === 0) {
     return (
       <Card className="p-12 text-center">

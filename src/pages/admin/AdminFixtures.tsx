@@ -46,7 +46,7 @@ export default function AdminFixtures() {
   useEffect(() => {
     let query = supabase
       .from("events")
-      .select("id,name,format")
+      .select("id,name,format,sport")
       .order("created_at", { ascending: false });
     if (!isSuperAdmin && managedOrgId) query = query.eq("organization_id", managedOrgId);
     query.then(({ data }) => {

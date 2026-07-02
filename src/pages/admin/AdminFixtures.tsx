@@ -24,6 +24,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { computeStandings } from "@/lib/standings";
+import { getSportProfile } from "@/lib/sports";
 import { StandingsTable } from "@/components/StandingsTable";
 
 interface Event { id: string; name: string; format: FixtureFormat; sport?: string }

@@ -1,6 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type FixtureFormat = "single_elim" | "double_elim" | "round_robin" | "league";
+export type FixtureFormat =
+  | "single_elim"
+  | "double_elim"
+  | "round_robin"
+  | "league"
+  | "group_knockout"
+  | "swiss"
+  | "custom";
 
 function nextPowerOfTwo(n: number): number {
   let p = 1;

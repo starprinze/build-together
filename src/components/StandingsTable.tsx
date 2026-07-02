@@ -32,6 +32,7 @@ export function StandingsTable({
             <TableHead>Team</TableHead>
             <TableHead className="text-center">P</TableHead>
             <TableHead className="text-center">W</TableHead>
+            {profile.allowsDraw && <TableHead className="text-center">D</TableHead>}
             <TableHead className="text-center">L</TableHead>
             <TableHead className="text-center hidden sm:table-cell">PF</TableHead>
             <TableHead className="text-center hidden sm:table-cell">PA</TableHead>

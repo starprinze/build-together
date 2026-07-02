@@ -58,6 +58,11 @@ export function StandingsTable({
               <TableCell className="text-center font-mono tabular-nums text-primary font-semibold">
                 {r.wins}
               </TableCell>
+              {profile.allowsDraw && (
+                <TableCell className="text-center font-mono tabular-nums text-muted-foreground">
+                  {r.draws}
+                </TableCell>
+              )}
               <TableCell className="text-center font-mono tabular-nums text-muted-foreground">
                 {r.losses}
               </TableCell>

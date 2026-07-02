@@ -53,6 +53,15 @@ export async function generateFixtures(
     rows = buildDoubleElim(eventId, shuffled);
   } else if (format === "round_robin" || format === "league") {
     rows = buildRoundRobin(eventId, shuffled, format === "league" ? 2 : 1);
+  } else if (format === "swiss") {
+    rows = buildSwissRound1(eventId, shuffled);
+  } else if (format === "custom") {
+    // Custom tournaments are built manually by the organizer — no auto-generation.
+    rows = [];
+  } else if (format === "group_knockout") {
+    // Group stage is generated via the group manager (Phase 3). Fall back to a
+    // single round robin so the format is never left empty.
+    rows = buildRoundRobin(eventId, shuffled, 1);
   }
 
   const { error } = await supabase.from("matches").insert(rows);

@@ -183,16 +183,21 @@ export type Database = {
           created_at: string
           event_id: string
           id: string
+          label: string | null
+          leg: number
+          locked: boolean
           match_number: number
           prediction_deadline: string | null
           result: string | null
           round: number
+          scheduled_at: string | null
           score_a: number | null
           score_b: number | null
           status: Database["public"]["Enums"]["match_status"]
           summary: string | null
           team_a_id: string | null
           team_b_id: string | null
+          venue: string | null
           winner_id: string | null
         }
         Insert: {
@@ -200,16 +205,21 @@ export type Database = {
           created_at?: string
           event_id: string
           id?: string
+          label?: string | null
+          leg?: number
+          locked?: boolean
           match_number: number
           prediction_deadline?: string | null
           result?: string | null
           round: number
+          scheduled_at?: string | null
           score_a?: number | null
           score_b?: number | null
           status?: Database["public"]["Enums"]["match_status"]
           summary?: string | null
           team_a_id?: string | null
           team_b_id?: string | null
+          venue?: string | null
           winner_id?: string | null
         }
         Update: {
@@ -217,16 +227,21 @@ export type Database = {
           created_at?: string
           event_id?: string
           id?: string
+          label?: string | null
+          leg?: number
+          locked?: boolean
           match_number?: number
           prediction_deadline?: string | null
           result?: string | null
           round?: number
+          scheduled_at?: string | null
           score_a?: number | null
           score_b?: number | null
           status?: Database["public"]["Enums"]["match_status"]
           summary?: string | null
           team_a_id?: string | null
           team_b_id?: string | null
+          venue?: string | null
           winner_id?: string | null
         }
         Relationships: [
@@ -586,7 +601,14 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       event_status: "upcoming" | "ongoing" | "completed" | "archived"
-      fixture_format: "single_elim" | "double_elim" | "round_robin" | "league"
+      fixture_format:
+        | "single_elim"
+        | "double_elim"
+        | "round_robin"
+        | "league"
+        | "group_knockout"
+        | "swiss"
+        | "custom"
       match_status: "pending" | "completed" | "bye" | "live" | "cancelled"
       org_role: "organizer" | "staff" | "viewer"
     }
@@ -718,7 +740,15 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       event_status: ["upcoming", "ongoing", "completed", "archived"],
-      fixture_format: ["single_elim", "double_elim", "round_robin", "league"],
+      fixture_format: [
+        "single_elim",
+        "double_elim",
+        "round_robin",
+        "league",
+        "group_knockout",
+        "swiss",
+        "custom",
+      ],
       match_status: ["pending", "completed", "bye", "live", "cancelled"],
       org_role: ["organizer", "staff", "viewer"],
     },

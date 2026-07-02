@@ -204,7 +204,8 @@ export default function AdminFixtures() {
     }
   };
 
-  const standings = computeStandings(matches);
+  const sportProfile = getSportProfile(currentEvent?.sport);
+  const standings = computeStandings(matches, sportProfile);
   const showStandings =
     currentEvent?.format === "round_robin" || currentEvent?.format === "league";
 

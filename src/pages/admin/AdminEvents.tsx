@@ -21,7 +21,14 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-type FixtureFormat = "single_elim" | "double_elim" | "round_robin" | "league";
+type FixtureFormat =
+  | "single_elim"
+  | "double_elim"
+  | "round_robin"
+  | "league"
+  | "group_knockout"
+  | "swiss"
+  | "custom";
 
 interface Event {
   id: string;
@@ -38,6 +45,9 @@ const FORMAT_LABELS: Record<FixtureFormat, string> = {
   double_elim: "Double elimination",
   round_robin: "Round robin",
   league: "League (home & away)",
+  group_knockout: "Group stage + knockout",
+  swiss: "Swiss system",
+  custom: "Custom tournament",
 };
 
 export function AdminLayout() {

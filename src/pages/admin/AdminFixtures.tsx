@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Sparkles, RotateCcw, FileDown, FileText, Wand2, Clock } from "lucide-react";
+import { Sparkles, RotateCcw, FileDown, FileText, Wand2, Clock, Plus, Lock, Unlock, ArrowLeftRight, Trash2, MapPin, Pencil } from "lucide-react";
 import {
   generateFixtures,
   resetFixtures,
@@ -17,6 +17,11 @@ import {
   finishMatch,
   reopenMatch,
   cancelMatch,
+  createManualMatch,
+  updateFixture,
+  swapHomeAway,
+  deleteFixture,
+  setFixtureLock,
   type FixtureFormat,
 } from "@/lib/bracket";
 import { BracketView, MatchRow } from "@/components/BracketView";
@@ -28,12 +33,15 @@ import { getSportProfile } from "@/lib/sports";
 import { StandingsTable } from "@/components/StandingsTable";
 
 interface Event { id: string; name: string; format: FixtureFormat; sport?: string }
+interface TeamOpt { id: string; name: string }
 
 export default function AdminFixtures() {
   const { isSuperAdmin, managedOrgId } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [eventId, setEventId] = useState<string>("");
   const [matches, setMatches] = useState<MatchRow[]>([]);
+  const [teams, setTeams] = useState<TeamOpt[]>([]);
+  const [showEditor, setShowEditor] = useState(false);
   const [scoringMatch, setScoringMatch] = useState<MatchRow | null>(null);
   const [scoreA, setScoreA] = useState("");
   const [scoreB, setScoreB] = useState("");
@@ -60,15 +68,20 @@ export default function AdminFixtures() {
   const currentEvent = events.find((e) => e.id === eventId);
 
   const load = async () => {
-    if (!eventId) return setMatches([]);
-    const { data } = await supabase
-      .from("matches")
-      .select("*, team_a:team_a_id(id,name,department), team_b:team_b_id(id,name,department), winner:winner_id(id,name)")
-      .eq("event_id", eventId)
-      .order("round")
-      .order("match_number");
+    if (!eventId) { setMatches([]); setTeams([]); return; }
+    const [{ data }, { data: teamData }] = await Promise.all([
+      supabase
+        .from("matches")
+        .select("*, team_a:team_a_id(id,name,department), team_b:team_b_id(id,name,department), winner:winner_id(id,name)")
+        .eq("event_id", eventId)
+        .order("round")
+        .order("match_number"),
+      supabase.from("teams").select("id,name").eq("event_id", eventId).order("name"),
+    ]);
     setMatches((data as any) ?? []);
+    setTeams((teamData as TeamOpt[]) ?? []);
   };
+
 
   useEffect(() => { load(); }, [eventId]);
 
@@ -226,6 +239,11 @@ export default function AdminFixtures() {
         <Button onClick={handleGenerate} disabled={busy || !eventId} className="shadow-court">
           <Sparkles className="h-4 w-4 mr-1" /> Generate fixtures
         </Button>
+        {eventId && (
+          <Button variant={showEditor ? "secondary" : "outline"} onClick={() => setShowEditor((v) => !v)}>
+            <Pencil className="h-4 w-4 mr-1" /> {showEditor ? "Hide editor" : "Fixture editor"}
+          </Button>
+        )}
         {matches.length > 0 && (
           <>
             <Button variant="outline" onClick={handleReset}>
@@ -246,6 +264,15 @@ export default function AdminFixtures() {
           </>
         )}
       </div>
+
+      {showEditor && (
+        <FixtureEditor
+          eventId={eventId}
+          matches={matches}
+          teams={teams}
+          onChanged={load}
+        />
+      )}
 
       {matches.length === 0 ? (
         <Card className="p-12 text-center text-muted-foreground">
@@ -486,6 +513,209 @@ function DeadlineRow({ match, onSaved }: { match: MatchRow; onSaved: () => void 
       <Button size="sm" variant="outline" onClick={save} disabled={saving}>
         {saving ? "Saving…" : "Save"}
       </Button>
+    </div>
+  );
+}
+
+// ============================================================================
+// Manual fixture editor (Phase 2)
+// ============================================================================
+
+function FixtureEditor({
+  eventId,
+  matches,
+  teams,
+  onChanged,
+}: {
+  eventId: string;
+  matches: MatchRow[];
+  teams: TeamOpt[];
+  onChanged: () => void;
+}) {
+  const [adding, setAdding] = useState(false);
+
+  const addFixture = async () => {
+    if (!eventId) return;
+    setAdding(true);
+    try {
+      const maxRound = matches.reduce((m, x) => Math.max(m, x.round ?? 1), 1);
+      await createManualMatch(eventId, { round: maxRound });
+      toast.success("Fixture added");
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const rounds = Array.from(new Set(matches.map((m) => m.round ?? 1))).sort((a, b) => a - b);
+
+  return (
+    <Card className="p-4 mb-6 shadow-card">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <h2 className="text-lg font-display font-semibold flex items-center gap-2">
+            <Pencil className="h-4 w-4" /> Fixture editor
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Set teams, venue and kick-off time. Lock a fixture to protect it from regeneration.
+          </p>
+        </div>
+        <Button size="sm" onClick={addFixture} disabled={adding || !eventId}>
+          <Plus className="h-4 w-4 mr-1" /> Add fixture
+        </Button>
+      </div>
+
+      {matches.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-6 text-center">
+          No fixtures yet. Add one manually or generate them.
+        </p>
+      ) : (
+        <div className="space-y-5">
+          {rounds.map((r) => (
+            <div key={r}>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                Round {r}
+              </div>
+              <div className="space-y-2">
+                {matches
+                  .filter((m) => (m.round ?? 1) === r)
+                  .map((m) => (
+                    <FixtureRow key={m.id} match={m} teams={teams} onChanged={onChanged} />
+                  ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function FixtureRow({
+  match,
+  teams,
+  onChanged,
+}: {
+  match: MatchRow;
+  teams: TeamOpt[];
+  onChanged: () => void;
+}) {
+  const locked = (match as any).locked as boolean;
+  const [venue, setVenue] = useState<string>((match as any).venue ?? "");
+  const [when, setWhen] = useState<string>(toLocalInput((match as any).scheduled_at));
+  const [busy, setBusy] = useState(false);
+  const editable = !locked && match.status !== "completed";
+
+  const run = async (fn: () => Promise<void>, ok: string) => {
+    setBusy(true);
+    try {
+      await fn();
+      toast.success(ok);
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const changeTeam = (slot: "team_a_id" | "team_b_id", value: string) =>
+    run(() => updateFixture(match.id, { [slot]: value === "none" ? null : value }), "Team updated");
+
+  const saveDetails = () =>
+    run(
+      () =>
+        updateFixture(match.id, {
+          venue: venue.trim() || null,
+          scheduled_at: when ? new Date(when).toISOString() : null,
+        }),
+      "Fixture saved",
+    );
+
+  return (
+    <div className="rounded-lg border border-border p-3 space-y-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <Select
+          value={match.team_a_id ?? "none"}
+          onValueChange={(v) => changeTeam("team_a_id", v)}
+          disabled={!editable || busy}
+        >
+          <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="Team A" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">— TBD —</SelectItem>
+            {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-9 w-9 shrink-0"
+          disabled={!editable || busy}
+          onClick={() => run(() => swapHomeAway(match.id), "Home/away swapped")}
+          title="Swap home/away"
+        >
+          <ArrowLeftRight className="h-4 w-4" />
+        </Button>
+        <Select
+          value={match.team_b_id ?? "none"}
+          onValueChange={(v) => changeTeam("team_b_id", v)}
+          disabled={!editable || busy}
+        >
+          <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="Team B" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">— TBD —</SelectItem>
+            {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <span className="text-xs text-muted-foreground capitalize ml-auto">{match.status}</span>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[160px]">
+          <MapPin className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="h-9 pl-8"
+            placeholder="Venue"
+            value={venue}
+            onChange={(e) => setVenue(e.target.value)}
+            disabled={!editable || busy}
+          />
+        </div>
+        <Input
+          type="datetime-local"
+          className="h-9 w-auto"
+          value={when}
+          onChange={(e) => setWhen(e.target.value)}
+          disabled={!editable || busy}
+        />
+        <Button size="sm" variant="outline" onClick={saveDetails} disabled={!editable || busy}>
+          Save
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-9 w-9"
+          disabled={busy}
+          onClick={() => run(() => setFixtureLock(match.id, !locked), locked ? "Unlocked" : "Locked")}
+          title={locked ? "Unlock fixture" : "Lock fixture"}
+        >
+          {locked ? <Lock className="h-4 w-4 text-primary" /> : <Unlock className="h-4 w-4" />}
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-9 w-9 text-destructive"
+          disabled={locked || busy}
+          onClick={() => {
+            if (confirm("Delete this fixture?")) run(() => deleteFixture(match.id), "Fixture deleted");
+          }}
+          title="Delete fixture"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }

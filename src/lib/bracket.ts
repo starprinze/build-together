@@ -42,7 +42,19 @@ export async function generateFixtures(
 ) {
   if (teamIds.length < 2) throw new Error("Need at least 2 teams");
 
-  await supabase.from("matches").delete().eq("event_id", eventId);
+  // Safe regenerate: never wipe fixtures an organizer has locked.
+  const { count: lockedCount } = await supabase
+    .from("matches")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .eq("locked", true);
+  if (lockedCount && lockedCount > 0) {
+    throw new Error(
+      `${lockedCount} fixture(s) are locked. Unlock them before regenerating.`,
+    );
+  }
+
+  await supabase.from("matches").delete().eq("event_id", eventId).eq("locked", false);
 
   const shuffled = shuffle(teamIds);
   let rows: Row[] = [];
@@ -384,6 +396,118 @@ export async function cancelMatch(matchId: string) {
 }
 
 export async function resetFixtures(eventId: string) {
-  const { error } = await supabase.from("matches").delete().eq("event_id", eventId);
+  // Preserve locked fixtures; only clear the rest.
+  const { error } = await supabase
+    .from("matches")
+    .delete()
+    .eq("event_id", eventId)
+    .eq("locked", false);
   if (error) throw error;
 }
+
+// ============================================================================
+// Manual fixture editor (Phase 2)
+// Organizer-facing helpers for create / edit / delete / lock / reorder.
+// ============================================================================
+
+export interface FixtureDetails {
+  team_a_id?: string | null;
+  team_b_id?: string | null;
+  round?: number;
+  match_number?: number;
+  venue?: string | null;
+  scheduled_at?: string | null;
+  bracket?: string;
+  label?: string | null;
+}
+
+/** Create a single fixture manually. */
+export async function createManualMatch(
+  eventId: string,
+  details: FixtureDetails = {},
+) {
+  // Default the match number to the end of its round so it appends cleanly.
+  const round = details.round ?? 1;
+  const bracket = details.bracket ?? "main";
+  let matchNumber = details.match_number;
+  if (matchNumber == null) {
+    const { data } = await supabase
+      .from("matches")
+      .select("match_number")
+      .eq("event_id", eventId)
+      .eq("round", round)
+      .eq("bracket", bracket)
+      .order("match_number", { ascending: false })
+      .limit(1);
+    matchNumber = (data?.[0]?.match_number ?? 0) + 1;
+  }
+  const { error } = await supabase.from("matches").insert({
+    event_id: eventId,
+    round,
+    match_number: matchNumber,
+    bracket,
+    team_a_id: details.team_a_id ?? null,
+    team_b_id: details.team_b_id ?? null,
+    venue: details.venue ?? null,
+    scheduled_at: details.scheduled_at ?? null,
+    label: details.label ?? null,
+    status: "pending",
+  });
+  if (error) throw error;
+}
+
+/** Edit fixture details (teams, venue, time, position). Blocked when locked. */
+export async function updateFixture(matchId: string, details: FixtureDetails) {
+  const { data: match, error } = await supabase
+    .from("matches")
+    .select("locked")
+    .eq("id", matchId)
+    .single();
+  if (error || !match) throw error ?? new Error("Fixture not found");
+  if (match.locked) throw new Error("Fixture is locked. Unlock it to edit.");
+
+  const { error: upErr } = await supabase
+    .from("matches")
+    .update(details)
+    .eq("id", matchId);
+  if (upErr) throw upErr;
+}
+
+/** Swap home/away teams for a fixture. */
+export async function swapHomeAway(matchId: string) {
+  const { data: match, error } = await supabase
+    .from("matches")
+    .select("team_a_id,team_b_id,locked")
+    .eq("id", matchId)
+    .single();
+  if (error || !match) throw error ?? new Error("Fixture not found");
+  if (match.locked) throw new Error("Fixture is locked. Unlock it to edit.");
+  const { error: upErr } = await supabase
+    .from("matches")
+    .update({ team_a_id: match.team_b_id, team_b_id: match.team_a_id })
+    .eq("id", matchId);
+  if (upErr) throw upErr;
+}
+
+/** Delete a fixture. Blocked when locked. */
+export async function deleteFixture(matchId: string) {
+  const { data: match, error } = await supabase
+    .from("matches")
+    .select("locked")
+    .eq("id", matchId)
+    .single();
+  if (error || !match) throw error ?? new Error("Fixture not found");
+  if (match.locked) throw new Error("Fixture is locked. Unlock it to delete.");
+  const { error: delErr } = await supabase.from("matches").delete().eq("id", matchId);
+  if (delErr) throw delErr;
+}
+
+/** Lock or unlock a fixture so it survives regeneration and edits. */
+export async function setFixtureLock(matchId: string, locked: boolean) {
+  const { error } = await supabase
+    .from("matches")
+    .update({ locked })
+    .eq("id", matchId);
+  if (error) throw error;
+}
+

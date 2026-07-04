@@ -63,6 +63,9 @@ export default function TeamProfile() {
       const { data: ev } = await supabase.from("events").select("*").eq("id", t.event_id).maybeSingle();
       if (ev) setEvent(ev as EventRow);
 
+      const { data: canMng } = await supabase.rpc("can_manage_event", { _event_id: t.event_id });
+      setCanManage(!!canMng);
+
       // Find all teams with same name (cross-event identity by name)
       const { data: sameTeams } = await supabase
         .from("teams")

@@ -34,8 +34,8 @@ describe("groupStandings", () => {
     const rows = groupStandings(matches);
     expect(rows[0].teamId).toBe("a");
     expect(rows[0].points).toBe(6);
-    // Bravo has a draw (1 pt), Charlie has a draw (1 pt); diff breaks the tie.
-    expect(rows[1].teamId).toBe("b");
+    // Bravo & Charlie each drew (1 pt); Charlie's better goal diff ranks it higher.
+    expect(rows[1].teamId).toBe("c");
   });
 });
 

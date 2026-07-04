@@ -307,6 +307,44 @@ export default function OrgLiveControl() {
                 </Button>
               )}
             </div>
+            {active && statusMeta(active.status).playable && (
+              <div className="border-t border-border pt-3">
+                <Label className="text-xs mb-2 block">Match phase</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {LIVE_PHASES.map((s) => (
+                    <Button
+                      key={s}
+                      size="sm"
+                      variant={active.status === s ? "default" : "outline"}
+                      className="h-7 text-xs"
+                      disabled={saving}
+                      onClick={() => active && setStatus(active, s)}
+                    >
+                      {statusMeta(s).label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {active && (
+              <div className="border-t border-border pt-3">
+                <Label className="text-xs mb-2 block">Administrative outcome</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {ADMIN_OUTCOMES.map((s) => (
+                    <Button
+                      key={s}
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      disabled={saving}
+                      onClick={() => active && setStatus(active, s)}
+                    >
+                      {statusMeta(s).label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
             {active && (
               <div>
                 <h3 className="text-sm font-semibold mb-2">Timeline</h3>

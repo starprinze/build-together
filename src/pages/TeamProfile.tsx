@@ -287,6 +287,10 @@ export default function TeamProfile() {
           )}
         </Card>
       </div>
+
+      <div className="mt-6">
+        <TeamSquad teamId={team.id} eventId={team.event_id} canManage={canManage} />
+      </div>
     </div>
   );
 }

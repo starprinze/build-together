@@ -47,6 +47,7 @@ export default function TeamProfile() {
   const [eventsById, setEventsById] = useState<Record<string, EventRow>>({});
   const [teamsById, setTeamsById] = useState<Record<string, TeamRow>>({});
   const [loading, setLoading] = useState(true);
+  const [canManage, setCanManage] = useState(false);
 
   useEffect(() => {
     if (!id) return;

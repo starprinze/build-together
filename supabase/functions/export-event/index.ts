@@ -139,24 +139,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify admin
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userResult.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: "Admin only" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const { eventId, format } = (await req.json()) as Body;
     if (!eventId || !["pdf", "excel", "csv", "docx"].includes(format)) {
       return new Response(JSON.stringify({ error: "eventId and format=pdf|excel|csv|docx required" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Permission inheritance: Super Admins and organization managers
+    // (owner / organizer / staff) who can manage this event are allowed.
+    // can_manage_event() already resolves the Viewer → Staff → Organizer → Super Admin chain.
+    const { data: canManage, error: permErr } = await supabase.rpc("can_manage_event", {
+      _event_id: eventId,
+    });
+    if (permErr || !canManage) {
+      return new Response(JSON.stringify({ error: "You do not have permission to export this event" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

@@ -46,13 +46,17 @@ export default function SuperAdminReports() {
   const exportEvent = async (id: string) => {
     setBusyId(id);
     try {
-      const { data, error } = await supabase.functions.invoke("export-event", { body: { event_id: id } });
+      const { data, error } = await supabase.functions.invoke("export-event", {
+        body: { eventId: id, format: "excel" },
+      });
       if (error) throw error;
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const { filename, mime, data: b64 } = data as { filename: string; mime: string; data: string };
+      const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const blob = new Blob([bin], { type: mime });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `event-${id}.json`;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Export ready");

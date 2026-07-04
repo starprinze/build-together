@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { FloatingDashboardButton } from "@/components/FloatingDashboardButton";
 
 export default function Layout() {
   const { user, isSuperAdmin, canManage, signOut } = useAuth();
@@ -131,6 +132,7 @@ export default function Layout() {
         </div>
       </footer>
       <MobileBottomNav />
+      <FloatingDashboardButton />
     </div>
   );
 }

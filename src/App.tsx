@@ -107,6 +107,12 @@ const App = () => (
                   <Route index element={<SuperAdminDashboard />} />
                   <Route path="organizations" element={<AdminOrganizations />} />
                   <Route path="events" element={<AdminEvents />} />
+                  <Route path="teams" element={<AdminTeams />} />
+                  <Route path="matches" element={<AdminFixtures />} />
+                  <Route path="live" element={<OrgLiveControl />} />
+                  <Route path="predictions" element={<OrgPredictions />} />
+                  <Route path="leaderboard" element={<OrgLeaderboard />} />
+                  <Route path="gallery" element={<OrgGallery />} />
                   <Route path="users" element={<AdminUsers />} />
                   <Route path="roles" element={<RolesPermissions />} />
                   <Route path="analytics" element={<SuperAdminAnalytics />} />

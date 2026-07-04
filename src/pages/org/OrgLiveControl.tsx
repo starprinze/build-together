@@ -162,9 +162,13 @@ export default function OrgLiveControl() {
     load();
   };
 
-  const live = matches.filter((m) => m.status === "live");
-  const ready = matches.filter((m) => m.status === "pending" && m.team_a && m.team_b);
-  const finished = matches.filter((m) => m.status === "completed");
+  const live = matches.filter((m) => statusMeta(m.status).tone === "live");
+  const ready = matches.filter(
+    (m) => (m.status === "pending" || m.status === "ready") && m.team_a && m.team_b,
+  );
+  const finished = matches.filter(
+    (m) => m.status === "completed" || statusMeta(m.status).tone === "warn",
+  );
 
   return (
     <div className="space-y-5">

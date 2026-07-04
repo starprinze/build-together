@@ -132,6 +132,7 @@ export default function Layout() {
         </div>
       </footer>
       <MobileBottomNav />
+      <FloatingDashboardButton />
     </div>
   );
 }

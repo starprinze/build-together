@@ -126,6 +126,44 @@ export type Database = {
           },
         ]
       }
+      groups: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          name: string
+          qualify_count: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          name: string
+          qualify_count?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          name?: string
+          qualify_count?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_events: {
         Row: {
           body: string
@@ -182,6 +220,7 @@ export type Database = {
           bracket: string
           created_at: string
           event_id: string
+          group_id: string | null
           id: string
           label: string | null
           leg: number
@@ -204,6 +243,7 @@ export type Database = {
           bracket?: string
           created_at?: string
           event_id: string
+          group_id?: string | null
           id?: string
           label?: string | null
           leg?: number
@@ -226,6 +266,7 @@ export type Database = {
           bracket?: string
           created_at?: string
           event_id?: string
+          group_id?: string | null
           id?: string
           label?: string | null
           leg?: number
@@ -250,6 +291,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {
@@ -397,6 +445,60 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      players: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          is_captain: boolean
+          jersey_number: number | null
+          name: string
+          photo_url: string | null
+          position: string | null
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          is_captain?: boolean
+          jersey_number?: number | null
+          name: string
+          photo_url?: string | null
+          position?: string | null
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          is_captain?: boolean
+          jersey_number?: number | null
+          name?: string
+          photo_url?: string | null
+          position?: string | null
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       points: {
         Row: {
@@ -609,8 +711,27 @@ export type Database = {
         | "group_knockout"
         | "swiss"
         | "custom"
-      match_status: "pending" | "completed" | "bye" | "live" | "cancelled"
-      org_role: "organizer" | "staff" | "viewer"
+      match_status:
+        | "pending"
+        | "completed"
+        | "bye"
+        | "live"
+        | "cancelled"
+        | "ready"
+        | "halftime"
+        | "break"
+        | "extra_time"
+        | "penalties"
+        | "walkover"
+        | "postponed"
+        | "abandoned"
+      org_role:
+        | "organizer"
+        | "staff"
+        | "viewer"
+        | "referee"
+        | "media"
+        | "volunteer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -749,8 +870,29 @@ export const Constants = {
         "swiss",
         "custom",
       ],
-      match_status: ["pending", "completed", "bye", "live", "cancelled"],
-      org_role: ["organizer", "staff", "viewer"],
+      match_status: [
+        "pending",
+        "completed",
+        "bye",
+        "live",
+        "cancelled",
+        "ready",
+        "halftime",
+        "break",
+        "extra_time",
+        "penalties",
+        "walkover",
+        "postponed",
+        "abandoned",
+      ],
+      org_role: [
+        "organizer",
+        "staff",
+        "viewer",
+        "referee",
+        "media",
+        "volunteer",
+      ],
     },
   },
 } as const

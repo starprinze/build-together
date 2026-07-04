@@ -22,8 +22,12 @@ import { MatchTimeline } from "@/components/MatchTimeline";
 import { Radio, RefreshCw, RotateCcw, Play, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
-type MatchStatus = "bye" | "cancelled" | "completed" | "live" | "pending";
+import {
+  LIVE_PHASES,
+  ADMIN_OUTCOMES,
+  statusMeta,
+  type MatchStatus,
+} from "@/lib/matchLifecycle";
 
 interface TeamRef {
   id: string;
@@ -158,9 +162,13 @@ export default function OrgLiveControl() {
     load();
   };
 
-  const live = matches.filter((m) => m.status === "live");
-  const ready = matches.filter((m) => m.status === "pending" && m.team_a && m.team_b);
-  const finished = matches.filter((m) => m.status === "completed");
+  const live = matches.filter((m) => statusMeta(m.status).tone === "live");
+  const ready = matches.filter(
+    (m) => (m.status === "pending" || m.status === "ready") && m.team_a && m.team_b,
+  );
+  const finished = matches.filter(
+    (m) => m.status === "completed" || statusMeta(m.status).tone === "warn",
+  );
 
   return (
     <div className="space-y-5">
@@ -303,6 +311,44 @@ export default function OrgLiveControl() {
                 </Button>
               )}
             </div>
+            {active && statusMeta(active.status).playable && (
+              <div className="border-t border-border pt-3">
+                <Label className="text-xs mb-2 block">Match phase</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {LIVE_PHASES.map((s) => (
+                    <Button
+                      key={s}
+                      size="sm"
+                      variant={active.status === s ? "default" : "outline"}
+                      className="h-7 text-xs"
+                      disabled={saving}
+                      onClick={() => active && setStatus(active, s)}
+                    >
+                      {statusMeta(s).label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {active && (
+              <div className="border-t border-border pt-3">
+                <Label className="text-xs mb-2 block">Administrative outcome</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {ADMIN_OUTCOMES.map((s) => (
+                    <Button
+                      key={s}
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      disabled={saving}
+                      onClick={() => active && setStatus(active, s)}
+                    >
+                      {statusMeta(s).label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
             {active && (
               <div>
                 <h3 className="text-sm font-semibold mb-2">Timeline</h3>

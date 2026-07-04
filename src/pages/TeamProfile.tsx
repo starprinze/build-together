@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Trophy, Users, Calendar, MapPin } from "lucide-react";
+import { TeamSquad } from "@/components/TeamSquad";
 
 interface TeamRow {
   id: string;
@@ -46,6 +47,7 @@ export default function TeamProfile() {
   const [eventsById, setEventsById] = useState<Record<string, EventRow>>({});
   const [teamsById, setTeamsById] = useState<Record<string, TeamRow>>({});
   const [loading, setLoading] = useState(true);
+  const [canManage, setCanManage] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -60,6 +62,9 @@ export default function TeamProfile() {
 
       const { data: ev } = await supabase.from("events").select("*").eq("id", t.event_id).maybeSingle();
       if (ev) setEvent(ev as EventRow);
+
+      const { data: canMng } = await supabase.rpc("can_manage_event", { _event_id: t.event_id });
+      setCanManage(!!canMng);
 
       // Find all teams with same name (cross-event identity by name)
       const { data: sameTeams } = await supabase
@@ -281,6 +286,10 @@ export default function TeamProfile() {
             </ul>
           )}
         </Card>
+      </div>
+
+      <div className="mt-6">
+        <TeamSquad teamId={team.id} eventId={team.event_id} canManage={canManage} />
       </div>
     </div>
   );

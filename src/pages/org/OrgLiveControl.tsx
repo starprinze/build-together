@@ -22,8 +22,12 @@ import { MatchTimeline } from "@/components/MatchTimeline";
 import { Radio, RefreshCw, RotateCcw, Play, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
-type MatchStatus = "bye" | "cancelled" | "completed" | "live" | "pending";
+import {
+  LIVE_PHASES,
+  ADMIN_OUTCOMES,
+  statusMeta,
+  type MatchStatus,
+} from "@/lib/matchLifecycle";
 
 interface TeamRef {
   id: string;

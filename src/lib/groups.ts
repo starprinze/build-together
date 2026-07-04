@@ -113,7 +113,16 @@ export async function generateGroupStage(
     .eq("bracket", "group")
     .eq("locked", false);
 
-  const rows: Array<Record<string, unknown>> = [];
+  const rows: Array<{
+    event_id: string;
+    group_id: string;
+    round: number;
+    match_number: number;
+    team_a_id: string;
+    team_b_id: string;
+    status: "pending";
+    bracket: string;
+  }> = [];
   for (const [groupId, teamIds] of Object.entries(assignments)) {
     if (teamIds.length < 2) continue;
     const pairs = roundRobinPairs(teamIds);

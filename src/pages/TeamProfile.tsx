@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Trophy, Users, Calendar, MapPin } from "lucide-react";
+import { TeamSquad } from "@/components/TeamSquad";
 
 interface TeamRow {
   id: string;

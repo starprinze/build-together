@@ -352,7 +352,7 @@ export default function OrgLiveControl() {
             {active && (
               <div>
                 <h3 className="text-sm font-semibold mb-2">Timeline</h3>
-                <MatchTimeline matchId={active.id} isAdmin />
+                <MatchTimeline matchId={active.id} isAdmin sport={events.find((e) => e.id === eventId)?.sport} />
               </div>
             )}
           </div>

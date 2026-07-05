@@ -146,7 +146,8 @@ export default function AdminNotifications() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <Composer onSent={load} />
+      <div className="flex items-center justify-between mb-6 mt-6 flex-wrap gap-3">
         <h1 className="text-2xl font-display font-bold flex items-center gap-2">
           <Bell className="h-6 w-6" /> Notifications
         </h1>

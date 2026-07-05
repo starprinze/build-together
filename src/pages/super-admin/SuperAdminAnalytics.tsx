@@ -121,6 +121,24 @@ export default function SuperAdminAnalytics() {
           </div>
         )}
       </Card>
+
+      <Card className="p-5">
+        <h2 className="font-display font-semibold mb-4">Notifications by type</h2>
+        {Object.keys(notifTally).length === 0 ? (
+          <p className="text-sm text-muted-foreground">No notifications yet.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(notifTally)
+              .sort((a, b) => b[1] - a[1])
+              .map(([type, count]) => (
+                <Badge key={type} variant="secondary" className="text-sm capitalize">
+                  {type.replace(/_/g, " ")}
+                  <span className="ml-1.5 text-muted-foreground">{count}</span>
+                </Badge>
+              ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

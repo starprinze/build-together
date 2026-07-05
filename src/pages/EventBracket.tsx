@@ -293,7 +293,7 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
               </div>
               <div>
                 <h4 className="text-sm font-semibold mb-2">Commentary</h4>
-                <MatchTimeline matchId={openMatch.id} isAdmin={isAdmin} />
+                <MatchTimeline matchId={openMatch.id} isAdmin={isAdmin} sport={event.sport} />
               </div>
             </div>
           )}

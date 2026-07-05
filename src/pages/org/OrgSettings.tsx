@@ -7,8 +7,104 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { Building2 } from "lucide-react";
+import { Building2, Users, Trash2 } from "lucide-react";
+
+const ORG_ROLES = ["organizer", "staff", "referee", "media", "volunteer", "viewer"] as const;
+type OrgMemberRole = (typeof ORG_ROLES)[number];
+
+interface MemberRow {
+  id: string;
+  user_id: string;
+  role: string;
+  username: string | null;
+}
+
+function MembersPanel({ orgId, canManage }: { orgId: string; canManage: boolean }) {
+  const [members, setMembers] = useState<MemberRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    const { data: mem } = await supabase
+      .from("organization_members")
+      .select("id,user_id,role")
+      .eq("organization_id", orgId)
+      .order("created_at", { ascending: true });
+    const rows = (mem as any[]) ?? [];
+    const ids = rows.map((m) => m.user_id);
+    let names: Record<string, string | null> = {};
+    if (ids.length) {
+      const { data: profs } = await supabase.from("profiles").select("user_id,username").in("user_id", ids);
+      (profs as any[] ?? []).forEach((p) => { names[p.user_id] = p.username; });
+    }
+    setMembers(rows.map((m) => ({ ...m, username: names[m.user_id] ?? null })));
+    setLoading(false);
+  };
+
+  useEffect(() => { if (orgId) load(); /* eslint-disable-next-line */ }, [orgId]);
+
+  const changeRole = async (id: string, role: OrgMemberRole) => {
+    const { error } = await supabase.from("organization_members").update({ role }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Role updated");
+    load();
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Remove this member?")) return;
+    const { error } = await supabase.from("organization_members").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Member removed");
+    load();
+  };
+
+  return (
+    <Card className="p-6 space-y-3">
+      <div className="flex items-center gap-2">
+        <Users className="h-4 w-4 text-primary" />
+        <h2 className="font-display font-semibold">Team members</h2>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Assign roles — organizers manage everything, staff enter scores, referees, media and volunteers get scoped access.
+      </p>
+      {loading ? (
+        <p className="text-sm text-muted-foreground py-4">Loading members…</p>
+      ) : members.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-4">No members yet. Add them from Role &amp; Access Management.</p>
+      ) : (
+        <ul className="divide-y divide-border">
+          {members.map((m) => (
+            <li key={m.id} className="flex items-center gap-3 py-2 flex-wrap">
+              <span className="text-sm flex-1 min-w-[120px] truncate">
+                {m.username ?? m.user_id.slice(0, 8)}
+              </span>
+              {canManage ? (
+                <Select value={m.role} onValueChange={(v) => changeRole(m.id, v as OrgMemberRole)}>
+                  <SelectTrigger className="h-8 w-[140px] text-xs capitalize"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {ORG_ROLES.map((r) => <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge variant="secondary" className="capitalize">{m.role}</Badge>
+              )}
+              {canManage && (
+                <button onClick={() => remove(m.id)} className="text-muted-foreground hover:text-destructive" aria-label="Remove">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
 
 export default function OrgSettings() {
   const { managedOrgId, orgRole, refreshRole } = useAuth();

@@ -46,7 +46,7 @@ interface LiveMatch {
 
 export default function OrgLiveControl() {
   const { isSuperAdmin, managedOrgId, loading } = useAuth();
-  const [events, setEvents] = useState<{ id: string; name: string }[]>([]);
+  const [events, setEvents] = useState<{ id: string; name: string; sport?: string | null }[]>([]);
   const [eventId, setEventId] = useState("");
   const [matches, setMatches] = useState<LiveMatch[]>([]);
   const [fetching, setFetching] = useState(false);
@@ -59,7 +59,7 @@ export default function OrgLiveControl() {
     if (loading) return;
     let q = supabase
       .from("events")
-      .select("id,name")
+      .select("id,name,sport")
       .neq("status", "archived")
       .order("created_at", { ascending: false });
     if (!isSuperAdmin && managedOrgId) q = q.eq("organization_id", managedOrgId);
@@ -352,7 +352,7 @@ export default function OrgLiveControl() {
             {active && (
               <div>
                 <h3 className="text-sm font-semibold mb-2">Timeline</h3>
-                <MatchTimeline matchId={active.id} isAdmin />
+                <MatchTimeline matchId={active.id} isAdmin sport={events.find((e) => e.id === eventId)?.sport} />
               </div>
             )}
           </div>

@@ -19,15 +19,20 @@ export default function SuperAdminAnalytics() {
   const [sports, setSports] = useState<SportBreakdown[]>([]);
   const [statusTally, setStatusTally] = useState<Record<string, number>>({});
   const [predTotal, setPredTotal] = useState(0);
+  const [notifTally, setNotifTally] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: orgs }, { data: events }, predRes] = await Promise.all([
+      const [{ data: orgs }, { data: events }, predRes, { data: notifs }] = await Promise.all([
         supabase.from("organizations").select("id,name"),
         supabase.from("events").select("organization_id,sport,status"),
         supabase.from("predictions").select("id", { count: "exact", head: true }),
+        supabase.from("notifications").select("type").limit(1000),
       ]);
       const evlist = events ?? [];
+      const notifCount: Record<string, number> = {};
+      (notifs ?? []).forEach((n: any) => { if (n.type) notifCount[n.type] = (notifCount[n.type] ?? 0) + 1; });
+      setNotifTally(notifCount);
 
       const evByOrg: Record<string, number> = {};
       const sportTally: Record<string, number> = {};
@@ -113,6 +118,24 @@ export default function SuperAdminAnalytics() {
                 </span>
               </Badge>
             ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-5">
+        <h2 className="font-display font-semibold mb-4">Notifications by type</h2>
+        {Object.keys(notifTally).length === 0 ? (
+          <p className="text-sm text-muted-foreground">No notifications yet.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(notifTally)
+              .sort((a, b) => b[1] - a[1])
+              .map(([type, count]) => (
+                <Badge key={type} variant="secondary" className="text-sm capitalize">
+                  {type.replace(/_/g, " ")}
+                  <span className="ml-1.5 text-muted-foreground">{count}</span>
+                </Badge>
+              ))}
           </div>
         )}
       </Card>

@@ -128,22 +128,32 @@ function MatchCard({
   );
 }
 
-function StatusPill({ status }: { status: MatchRow["status"] }) {
-  const map: Record<MatchRow["status"], { label: string; cls: string }> = {
+function StatusPill({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
     completed: { label: "Finished", cls: "bg-primary/10 text-primary" },
     live: { label: "Live", cls: "bg-destructive/15 text-destructive" },
     pending: { label: "Upcoming", cls: "bg-muted text-muted-foreground" },
+    ready: { label: "Ready", cls: "bg-muted text-muted-foreground" },
+    halftime: { label: "Half-time", cls: "bg-destructive/15 text-destructive" },
+    break: { label: "Break", cls: "bg-destructive/15 text-destructive" },
+    extra_time: { label: "Extra time", cls: "bg-destructive/15 text-destructive" },
+    penalties: { label: "Penalties", cls: "bg-destructive/15 text-destructive" },
+    walkover: { label: "Walkover", cls: "bg-amber-500/15 text-amber-600" },
+    postponed: { label: "Postponed", cls: "bg-amber-500/15 text-amber-600" },
+    abandoned: { label: "Abandoned", cls: "bg-amber-500/15 text-amber-600" },
     bye: { label: "Bye", cls: "bg-muted text-muted-foreground" },
     cancelled: { label: "Cancelled", cls: "bg-muted text-muted-foreground line-through" },
   };
-  const { label, cls } = map[status];
+  const live = status === "live" || status === "halftime" || status === "break" || status === "extra_time" || status === "penalties";
+  const { label, cls } = map[status] ?? { label: status, cls: "bg-muted text-muted-foreground" };
   return (
     <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded uppercase tracking-wider inline-flex items-center gap-1", cls)}>
-      {status === "live" && <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />}
+      {live && <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />}
       {label}
     </span>
   );
 }
+
 
 function TeamRow({
   name,

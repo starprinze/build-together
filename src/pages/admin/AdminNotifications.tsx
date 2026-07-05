@@ -3,8 +3,14 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Check, Trash2 } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Bell, Check, Trash2, Megaphone, Send } from "lucide-react";
 import { toast } from "sonner";
 
 interface Notification {
@@ -19,9 +25,85 @@ interface Notification {
   created_at: string;
 }
 
+interface EventOpt { id: string; name: string }
+
+function Composer({ onSent }: { onSent: () => void }) {
+  const [type, setType] = useState("announcement");
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [eventId, setEventId] = useState("none");
+  const [events, setEvents] = useState<EventOpt[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    supabase.from("events").select("id,name").order("created_at", { ascending: false })
+      .then(({ data }) => setEvents((data as EventOpt[]) ?? []));
+  }, []);
+
+  const send = async () => {
+    if (!title.trim()) return toast.error("Add a title");
+    setBusy(true);
+    const { error } = await supabase.from("notifications").insert({
+      type,
+      title: title.trim(),
+      body: body.trim() || null,
+      event_id: eventId === "none" ? null : eventId,
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(type === "reminder" ? "Reminder sent" : "Announcement published");
+    setTitle("");
+    setBody("");
+    onSent();
+  };
+
+  return (
+    <Card className="p-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <Megaphone className="h-4 w-4 text-primary" />
+        <h2 className="font-display font-semibold">Publish announcement or reminder</h2>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <Label>Type</Label>
+          <Select value={type} onValueChange={setType}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="announcement">📢 Announcement</SelectItem>
+              <SelectItem value="reminder">⏰ Reminder</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Link to event (optional)</Label>
+          <Select value={eventId} onValueChange={setEventId}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— None —</SelectItem>
+              {events.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div>
+        <Label>Title</Label>
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Finals kick off Saturday 3pm" />
+      </div>
+      <div>
+        <Label>Message</Label>
+        <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} placeholder="Details…" />
+      </div>
+      <Button onClick={send} disabled={busy} className="shadow-court">
+        <Send className="h-4 w-4 mr-2" /> {busy ? "Sending…" : "Publish"}
+      </Button>
+    </Card>
+  );
+}
+
 export default function AdminNotifications() {
   const [items, setItems] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<"all" | "unread">("all");
+
 
   const load = async () => {
     const { data } = await supabase
@@ -64,7 +146,8 @@ export default function AdminNotifications() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <Composer onSent={load} />
+      <div className="flex items-center justify-between mb-6 mt-6 flex-wrap gap-3">
         <h1 className="text-2xl font-display font-bold flex items-center gap-2">
           <Bell className="h-6 w-6" /> Notifications
         </h1>

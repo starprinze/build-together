@@ -31,6 +31,7 @@ import {
 import { computeStandings } from "@/lib/standings";
 import { getSportProfile } from "@/lib/sports";
 import { StandingsTable } from "@/components/StandingsTable";
+import { GroupManager } from "@/components/GroupManager";
 
 interface Event { id: string; name: string; format: FixtureFormat; sport?: string }
 interface TeamOpt { id: string; name: string }

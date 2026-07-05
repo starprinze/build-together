@@ -222,15 +222,16 @@ export function GroupManager({
               <div key={t.id} className="flex items-center gap-2">
                 <span className="text-sm flex-1 truncate">{t.name}</span>
                 <Select
-                  value={assign[t.id] ?? ""}
-                  onValueChange={(v) => setAssign((p) => ({ ...p, [t.id]: v }))}
+                  value={assign[t.id] || "unassigned"}
+                  onValueChange={(v) => setAssign((p) => ({ ...p, [t.id]: v === "unassigned" ? "" : v }))}
                 >
                   <SelectTrigger className="h-8 w-[140px] text-xs">
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
                   <SelectContent>
-                    {groupOptions.map((o) => (
-                      <SelectItem key={o.id || "none"} value={o.id || "unassigned"} disabled={o.id === "" ? false : false}>
+                    <SelectItem value="unassigned">— Unassigned —</SelectItem>
+                    {groups.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
                         {o.name}
                       </SelectItem>
                     ))}
@@ -238,6 +239,7 @@ export function GroupManager({
                 </Select>
               </div>
             ))}
+
           </div>
         </div>
       )}

@@ -59,7 +59,7 @@ export default function OrgLiveControl() {
     if (loading) return;
     let q = supabase
       .from("events")
-      .select("id,name")
+      .select("id,name,sport")
       .neq("status", "archived")
       .order("created_at", { ascending: false });
     if (!isSuperAdmin && managedOrgId) q = q.eq("organization_id", managedOrgId);

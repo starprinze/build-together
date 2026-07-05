@@ -46,7 +46,7 @@ interface LiveMatch {
 
 export default function OrgLiveControl() {
   const { isSuperAdmin, managedOrgId, loading } = useAuth();
-  const [events, setEvents] = useState<{ id: string; name: string }[]>([]);
+  const [events, setEvents] = useState<{ id: string; name: string; sport?: string | null }[]>([]);
   const [eventId, setEventId] = useState("");
   const [matches, setMatches] = useState<LiveMatch[]>([]);
   const [fetching, setFetching] = useState(false);

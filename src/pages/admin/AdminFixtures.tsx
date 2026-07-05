@@ -267,12 +267,21 @@ export default function AdminFixtures() {
       </div>
 
       {showEditor && (
-        <FixtureEditor
-          eventId={eventId}
-          matches={matches}
-          teams={teams}
-          onChanged={load}
-        />
+        <>
+          <GroupManager
+            eventId={eventId}
+            teams={teams}
+            matches={matches}
+            profile={sportProfile}
+            onChanged={load}
+          />
+          <FixtureEditor
+            eventId={eventId}
+            matches={matches}
+            teams={teams}
+            onChanged={load}
+          />
+        </>
       )}
 
       {matches.length === 0 ? (

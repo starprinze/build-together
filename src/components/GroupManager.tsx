@@ -136,7 +136,7 @@ export function GroupManager({
     }
   };
 
-  const groupOptions = [{ id: "", name: "— Unassigned —" }, ...groups];
+  
 
   return (
     <Card className="p-4 mb-6 shadow-card">

@@ -212,6 +212,8 @@ export default function OrgSettings() {
           )}
         </form>
       </Card>
+
+      <MembersPanel orgId={managedOrgId} canManage={orgRole === "owner" || orgRole === "organizer"} />
     </div>
   );
 }

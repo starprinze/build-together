@@ -92,7 +92,7 @@ export function GroupStagePanel({
                       <th className="text-center font-medium py-2 px-1.5">D</th>
                     )}
                     <th className="text-center font-medium py-2 px-1.5">L</th>
-                    <th className="text-center font-medium py-2 px-1.5 hidden xs:table-cell sm:table-cell">
+                    <th className="text-center font-medium py-2 px-1.5 hidden sm:table-cell">
                       GD
                     </th>
                     <th className="text-center font-medium py-2 px-1.5 pr-4">Pts</th>
@@ -149,7 +149,7 @@ export function GroupStagePanel({
                         </td>
                         <td
                           className={cn(
-                            "text-center py-2.5 px-1.5 font-mono tabular-nums hidden xs:table-cell sm:table-cell",
+                            "text-center py-2.5 px-1.5 font-mono tabular-nums hidden sm:table-cell",
                             r.diff > 0 && "text-primary",
                             r.diff < 0 && "text-destructive",
                           )}

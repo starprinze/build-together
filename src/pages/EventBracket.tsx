@@ -202,9 +202,49 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
               <p className="text-sm text-muted-foreground">Check back when the tournament begins.</p>
             </Card>
           ) : (
-            <BracketView matches={matches} onDetailsClick={(m) => setOpenMatch(m)} />
+            <div
+              className={cn(
+                "grid gap-6 lg:gap-8 items-start",
+                hasGroups && "lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)]",
+              )}
+            >
+              {hasGroups && (
+                <section className="min-w-0">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="h-5 w-1 rounded-full bg-primary" />
+                    <h2 className="text-lg font-display font-bold">Group Stage</h2>
+                  </div>
+                  <GroupStagePanel eventId={event.id} matches={groupMatches} sport={event.sport} />
+                </section>
+              )}
+              <section className="min-w-0">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="h-5 w-1 rounded-full bg-primary" />
+                  <h2 className="text-lg font-display font-bold">Knockout Stage</h2>
+                </div>
+                {knockoutMatches.length === 0 ? (
+                  <Card className="p-10 text-center rounded-xl">
+                    <Trophy className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+                    <h3 className="font-display font-semibold mb-1">
+                      Knockout bracket not set yet
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {hasGroups
+                        ? "The bracket populates automatically once group qualifiers are decided."
+                        : "Check back when the tournament begins."}
+                    </p>
+                  </Card>
+                ) : (
+                  <BracketView
+                    matches={knockoutMatches}
+                    onDetailsClick={(m) => setOpenMatch(m)}
+                  />
+                )}
+              </section>
+            </div>
           )}
         </TabsContent>
+
 
         <TabsContent value="predictions" className="mt-0">
           {predictableMatches.length === 0 ? (

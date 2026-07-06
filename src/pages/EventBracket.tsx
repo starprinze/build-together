@@ -131,6 +131,10 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
   const standings = computeStandings(matches, sportProfile);
   const matchIds = matches.map((m) => m.id);
   const predictableMatches = matches.filter((m) => m.team_a && m.team_b);
+  // Group-stage fixtures must never appear inside the knockout bracket.
+  const groupMatches = matches.filter((m) => !!m.group_id || m.bracket === "group");
+  const knockoutMatches = matches.filter((m) => !(m.group_id || m.bracket === "group"));
+  const hasGroups = groupMatches.length > 0;
 
   return (
     <div className="container py-8 sm:py-12">

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BracketView, MatchRow, EventInfo } from "@/components/BracketView";
+import { GroupStagePanel } from "@/components/GroupStagePanel";
+import { cn } from "@/lib/utils";
 import { StandingsTable } from "@/components/StandingsTable";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchReactions } from "@/components/MatchReactions";

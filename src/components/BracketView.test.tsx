@@ -34,14 +34,14 @@ describe("BracketView", () => {
     expect(screen.getByText(/final/i)).toBeInTheDocument();
   });
 
-  it("shows a Live pill for pending matches with both teams set", () => {
+  it("shows an Upcoming pill for pending matches with both teams set", () => {
     renderWith([mk({})]);
-    expect(screen.getByText("Live")).toBeInTheDocument();
+    expect(screen.getByText("Upcoming")).toBeInTheDocument();
   });
 
-  it("shows a Pending pill when teams aren't set yet", () => {
+  it("shows placeholders and an Upcoming pill when teams aren't set yet", () => {
     renderWith([mk({ team_a_id: null, team_b_id: null, team_a: null, team_b: null })]);
-    expect(screen.getByText("Pending")).toBeInTheDocument();
+    expect(screen.getByText("Upcoming")).toBeInTheDocument();
     expect(screen.getAllByText("TBD").length).toBeGreaterThan(0);
   });
 

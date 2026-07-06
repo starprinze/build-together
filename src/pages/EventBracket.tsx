@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BracketView, MatchRow, EventInfo } from "@/components/BracketView";
+import { GroupStagePanel } from "@/components/GroupStagePanel";
+import { cn } from "@/lib/utils";
 import { StandingsTable } from "@/components/StandingsTable";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchReactions } from "@/components/MatchReactions";
@@ -129,6 +131,10 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
   const standings = computeStandings(matches, sportProfile);
   const matchIds = matches.map((m) => m.id);
   const predictableMatches = matches.filter((m) => m.team_a && m.team_b);
+  // Group-stage fixtures must never appear inside the knockout bracket.
+  const groupMatches = matches.filter((m) => !!m.group_id || m.bracket === "group");
+  const knockoutMatches = matches.filter((m) => !(m.group_id || m.bracket === "group"));
+  const hasGroups = groupMatches.length > 0;
 
   return (
     <div className="container py-8 sm:py-12">
@@ -196,9 +202,49 @@ export default function EventBracket({ defaultTab = "bracket" }: { defaultTab?: 
               <p className="text-sm text-muted-foreground">Check back when the tournament begins.</p>
             </Card>
           ) : (
-            <BracketView matches={matches} onDetailsClick={(m) => setOpenMatch(m)} />
+            <div
+              className={cn(
+                "grid gap-6 lg:gap-8 items-start",
+                hasGroups && "lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)]",
+              )}
+            >
+              {hasGroups && (
+                <section className="min-w-0">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="h-5 w-1 rounded-full bg-primary" />
+                    <h2 className="text-lg font-display font-bold">Group Stage</h2>
+                  </div>
+                  <GroupStagePanel eventId={event.id} matches={groupMatches} sport={event.sport} />
+                </section>
+              )}
+              <section className="min-w-0">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="h-5 w-1 rounded-full bg-primary" />
+                  <h2 className="text-lg font-display font-bold">Knockout Stage</h2>
+                </div>
+                {knockoutMatches.length === 0 ? (
+                  <Card className="p-10 text-center rounded-xl">
+                    <Trophy className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+                    <h3 className="font-display font-semibold mb-1">
+                      Knockout bracket not set yet
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {hasGroups
+                        ? "The bracket populates automatically once group qualifiers are decided."
+                        : "Check back when the tournament begins."}
+                    </p>
+                  </Card>
+                ) : (
+                  <BracketView
+                    matches={knockoutMatches}
+                    onDetailsClick={(m) => setOpenMatch(m)}
+                  />
+                )}
+              </section>
+            </div>
           )}
         </TabsContent>
+
 
         <TabsContent value="predictions" className="mt-0">
           {predictableMatches.length === 0 ? (

@@ -162,3 +162,87 @@
     letter-spacing: -0.015em;
   }
 }
+
+/* ============================================================
+   Tournament knockout bracket connectors
+   Pure-CSS lines linking each round to the next. Purple accent.
+   ============================================================ */
+@layer components {
+  .kbracket {
+    display: flex;
+    align-items: stretch;
+    gap: 3rem; /* room for the connector lines between columns */
+  }
+  .kround {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    min-width: 15rem;
+  }
+  /* A pair of feeder matches that converge into one next-round match */
+  .kpair {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    flex: 1 1 0;
+  }
+  /* vertical line joining the two feeder centres (at 25% / 75%) */
+  .kpair::before {
+    content: "";
+    position: absolute;
+    right: -1.5rem;
+    top: 25%;
+    bottom: 25%;
+    width: 2px;
+    background: hsl(var(--primary) / 0.45);
+    border-radius: 2px;
+  }
+  /* horizontal stub from the join into the next round */
+  .kpair::after {
+    content: "";
+    position: absolute;
+    right: -3rem;
+    top: 50%;
+    width: 1.5rem;
+    height: 2px;
+    background: hsl(var(--primary) / 0.45);
+  }
+  .kcell {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  /* horizontal stub out of each feeder match toward the vertical line */
+  .kpair .kcell::after {
+    content: "";
+    position: absolute;
+    right: -1.5rem;
+    top: 50%;
+    width: 1.5rem;
+    height: 2px;
+    background: hsl(var(--primary) / 0.45);
+  }
+  /* incoming stub into the next round's match (except the very first round) */
+  .kround:not(:first-child) > .kcell::before,
+  .kround:not(:first-child) > .kpair > .kcell::before {
+    content: "";
+    position: absolute;
+    left: -1.5rem;
+    top: 50%;
+    width: 1.5rem;
+    height: 2px;
+    background: hsl(var(--primary) / 0.45);
+  }
+  /* single-match final column keeps its incoming stub only */
+  .kround.kfinal > .kcell::after,
+  .kround.kfinal .kpair::before,
+  .kround.kfinal .kpair::after {
+    display: none;
+  }
+  @media (max-width: 767px) {
+    .kbracket { gap: 2rem; }
+    .kround { min-width: 13.5rem; }
+    .kpair::after { right: -2rem; }
+  }
+}

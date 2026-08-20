@@ -463,7 +463,33 @@ export async function reopenMatch(matchId: string) {
   if (error) throw error;
 }
 
-/** Finalise a match: derives winner/result and advances bracket. */
+export type MatchResult = "team_a" | "team_b" | "draw";
+
+/**
+ * Pure outcome resolver — decides the result of a match from its scores.
+ * Draws are only legal when the sport allows them AND the fixture is not a
+ * knockout tie (a knockout must produce a winner).
+ */
+export function resolveOutcome(
+  scoreA: number,
+  scoreB: number,
+  opts: { allowsDraw: boolean; knockout: boolean; winnerBy?: "higher" | "lower" },
+): MatchResult {
+  if (scoreA === scoreB) {
+    if (opts.knockout || !opts.allowsDraw) {
+      throw new Error(
+        opts.knockout
+          ? "Knockout matches cannot end in a draw — decide it on extra time or penalties."
+          : "This sport does not allow draws — enter a decisive score.",
+      );
+    }
+    return "draw";
+  }
+  const aWins = opts.winnerBy === "lower" ? scoreA < scoreB : scoreA > scoreB;
+  return aWins ? "team_a" : "team_b";
+}
+
+/** Finalise a match: derives winner/result and advances the bracket. */
 export async function finishMatch(
   matchId: string,
   scoreA?: number,
@@ -471,7 +497,7 @@ export async function finishMatch(
 ) {
   const { data: match, error } = await supabase
     .from("matches")
-    .select("*")
+    .select("*, events:event_id(sport,format)")
     .eq("id", matchId)
     .single();
   if (error || !match) throw error ?? new Error("Match not found");
@@ -479,10 +505,20 @@ export async function finishMatch(
   const a = scoreA ?? match.score_a;
   const b = scoreB ?? match.score_b;
   if (a == null || b == null) throw new Error("Enter both scores before finishing");
-  if (a === b) throw new Error("Knockout matches cannot end in a tie");
 
-  const winnerId = a > b ? match.team_a_id : match.team_b_id;
-  if (!winnerId) throw new Error("Cannot determine winner");
+  const ev = (match as unknown as { events?: { sport?: string; format?: string } }).events;
+  const profile = getSportProfile(ev?.sport ?? "");
+  const knockout = isKnockoutBracket(match.bracket, ev?.format);
+
+  const result = resolveOutcome(a, b, {
+    allowsDraw: profile.allowsDraw,
+    knockout,
+    winnerBy: profile.winnerBy,
+  });
+
+  const winnerId =
+    result === "team_a" ? match.team_a_id : result === "team_b" ? match.team_b_id : null;
+  if (result !== "draw" && !winnerId) throw new Error("Cannot determine winner");
 
   const { error: upErr } = await supabase
     .from("matches")
@@ -490,13 +526,19 @@ export async function finishMatch(
       score_a: a,
       score_b: b,
       winner_id: winnerId,
+      result,
       status: "completed",
     })
     .eq("id", matchId);
   if (upErr) throw upErr;
 
-  if (match.bracket === "main") {
-    await advanceWinner(match.event_id, match.round, match.match_number, winnerId);
+  if (knockout && winnerId) {
+    const bracket = match.bracket ?? "main";
+    await advanceWinner(match.event_id, match.round, match.match_number, winnerId, bracket);
+    if (bracket === "winners") {
+      const loserId = winnerId === match.team_a_id ? match.team_b_id : match.team_a_id;
+      if (loserId) await dropLoser(match.event_id, match.round, match.match_number, loserId);
+    }
   }
 }
 

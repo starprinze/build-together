@@ -286,28 +286,138 @@ async function propagateByes(eventId: string, totalRounds: number) {
   }
 }
 
+/** Knockout brackets where winners propagate to a later fixture. */
+export const KNOCKOUT_BRACKETS = ["main", "knockout", "winners", "losers", "grand_final"];
+
+export function isKnockoutBracket(bracket: string | null | undefined, format?: string) {
+  const b = bracket ?? "main";
+  if (b === "group") return false;
+  if (b === "winners" || b === "losers" || b === "grand_final" || b === "knockout") return true;
+  // "main" is only a knockout when the event format is elimination-based.
+  return !format || format === "single_elim" || format === "double_elim" || format === "group_knockout";
+}
+
+async function placeTeam(
+  eventId: string,
+  bracket: string,
+  round: number,
+  matchNumber: number,
+  slot: "team_a_id" | "team_b_id",
+  teamId: string,
+) {
+  const { data: target } = await supabase
+    .from("matches")
+    .select("id,locked,team_a_id,team_b_id")
+    .eq("event_id", eventId)
+    .eq("bracket", bracket)
+    .eq("round", round)
+    .eq("match_number", matchNumber)
+    .maybeSingle();
+  if (!target || target.locked) return; // never overwrite locked/manual fixtures
+  const update = slot === "team_a_id" ? { team_a_id: teamId } : { team_b_id: teamId };
+  await supabase.from("matches").update(update).eq("id", target.id);
+}
+
+/**
+ * Advance a winner into the next fixture of its bracket.
+ * Handles single elimination ("main"/"knockout") plus double-elimination
+ * winners/losers/grand-final routing.
+ */
 export async function advanceWinner(
   eventId: string,
   round: number,
   matchNumber: number,
   winnerId: string,
+  bracket = "main",
 ) {
+  if (bracket === "grand_final") return; // champion decided
+
+  if (bracket === "losers") {
+    const counts = await losersRoundSizes(eventId);
+    const here = counts[round] ?? 0;
+    const next = counts[round + 1];
+    if (!next) {
+      // Losers final winner meets the winners-bracket champion.
+      await placeTeam(eventId, "grand_final", 1, 1, "team_b_id", winnerId);
+      return;
+    }
+    if (next === here) {
+      await placeTeam(eventId, "losers", round + 1, matchNumber, "team_a_id", winnerId);
+    } else {
+      await placeTeam(
+        eventId,
+        "losers",
+        round + 1,
+        Math.ceil(matchNumber / 2),
+        matchNumber % 2 === 1 ? "team_a_id" : "team_b_id",
+        winnerId,
+      );
+    }
+    return;
+  }
+
   const nextRound = round + 1;
   const nextMatchNumber = Math.ceil(matchNumber / 2);
   const slot = matchNumber % 2 === 1 ? "team_a_id" : "team_b_id";
 
   const { data: nextMatch } = await supabase
     .from("matches")
-    .select("*")
+    .select("id,locked")
     .eq("event_id", eventId)
     .eq("round", nextRound)
     .eq("match_number", nextMatchNumber)
-    .eq("bracket", "main")
+    .eq("bracket", bracket)
     .maybeSingle();
 
-  if (!nextMatch) return;
+  if (!nextMatch) {
+    // Winners-bracket final: champion of the winners side enters the grand final.
+    if (bracket === "winners") {
+      await placeTeam(eventId, "grand_final", 1, 1, "team_a_id", winnerId);
+    }
+    return;
+  }
+  if (nextMatch.locked) return;
   const update = slot === "team_a_id" ? { team_a_id: winnerId } : { team_b_id: winnerId };
   await supabase.from("matches").update(update).eq("id", nextMatch.id);
+}
+
+async function losersRoundSizes(eventId: string): Promise<Record<number, number>> {
+  const { data } = await supabase
+    .from("matches")
+    .select("round")
+    .eq("event_id", eventId)
+    .eq("bracket", "losers");
+  const counts: Record<number, number> = {};
+  for (const r of data ?? []) counts[r.round] = (counts[r.round] ?? 0) + 1;
+  return counts;
+}
+
+/** Drop the loser of a winners-bracket match into the losers bracket. */
+export async function dropLoser(
+  eventId: string,
+  wbRound: number,
+  wbMatchNumber: number,
+  loserId: string,
+) {
+  const counts = await losersRoundSizes(eventId);
+  if (Object.keys(counts).length === 0) return;
+
+  if (wbRound === 1) {
+    // Two WB R1 losers meet in each LB R1 fixture.
+    await placeTeam(
+      eventId,
+      "losers",
+      1,
+      Math.ceil(wbMatchNumber / 2),
+      wbMatchNumber % 2 === 1 ? "team_a_id" : "team_b_id",
+      loserId,
+    );
+    return;
+  }
+  // WB round r (r>=2) losers enter LB round 2(r-1) opposite an LB survivor.
+  const lbRound = 2 * (wbRound - 1);
+  if (!counts[lbRound]) return;
+  await placeTeam(eventId, "losers", lbRound, wbMatchNumber, "team_b_id", loserId);
 }
 
 /**

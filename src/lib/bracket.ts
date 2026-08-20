@@ -667,3 +667,83 @@ export async function setFixtureLock(matchId: string, locked: boolean) {
   if (error) throw error;
 }
 
+
+// ============================================================================
+// Swiss pairing (rounds 2+)
+// Teams are ranked by current standings and paired with the nearest opponent
+// they have not already faced. The lowest-ranked unpaired team takes the bye.
+// ============================================================================
+
+/** Pure Swiss pairing: ranked team ids + already-played pairs -> next round pairs. */
+export function swissPairings(
+  rankedTeamIds: string[],
+  playedPairs: Array<[string, string]>,
+): Array<[string, string | null]> {
+  const key = (a: string, b: string) => [a, b].sort().join("|");
+  const played = new Set(playedPairs.map(([a, b]) => key(a, b)));
+  const pool = [...rankedTeamIds];
+  const out: Array<[string, string | null]> = [];
+
+  while (pool.length > 1) {
+    const a = pool.shift()!;
+    let idx = pool.findIndex((b) => !played.has(key(a, b)));
+    if (idx === -1) idx = 0; // rematch unavoidable — take the nearest opponent
+    const b = pool.splice(idx, 1)[0];
+    out.push([a, b]);
+  }
+  if (pool.length === 1) out.push([pool[0], null]);
+  return out;
+}
+
+/** Generate the next Swiss round for an event from its current results. */
+export async function generateNextSwissRound(eventId: string) {
+  const { computeStandings } = await import("@/lib/standings");
+  const { getSportProfile } = await import("@/lib/sports");
+
+  const [{ data: ev }, { data: rows }] = await Promise.all([
+    supabase.from("events").select("sport").eq("id", eventId).maybeSingle(),
+    supabase
+      .from("matches")
+      .select(
+        "id,round,match_number,team_a_id,team_b_id,score_a,score_b,winner_id,status,bracket," +
+          "team_a:team_a_id(id,name,department),team_b:team_b_id(id,name,department),winner:winner_id(id,name)",
+      )
+      .eq("event_id", eventId)
+      .eq("bracket", "main")
+      .order("round"),
+  ]);
+
+  const matches = (rows ?? []) as unknown as import("@/components/BracketView").MatchRow[];
+  if (matches.length === 0) throw new Error("Generate round 1 before pairing a Swiss round");
+
+  const lastRound = Math.max(...matches.map((m) => m.round));
+  const unfinished = matches.filter(
+    (m) => m.round === lastRound && m.status !== "completed" && m.status !== "bye",
+  );
+  if (unfinished.length > 0) {
+    throw new Error(`Finish all round ${lastRound} matches before pairing the next round`);
+  }
+
+  const profile = getSportProfile(ev?.sport ?? "");
+  const ranked = computeStandings(matches, profile).map((r) => r.teamId);
+  const playedPairs = matches
+    .filter((m) => m.team_a_id && m.team_b_id)
+    .map((m) => [m.team_a_id!, m.team_b_id!] as [string, string]);
+
+  const pairs = swissPairings(ranked, playedPairs);
+  const round = lastRound + 1;
+  const insertRows = pairs.map(([a, b], i) => ({
+    event_id: eventId,
+    round,
+    match_number: i + 1,
+    team_a_id: a,
+    team_b_id: b,
+    winner_id: b ? null : a,
+    status: (b ? "pending" : "bye") as "pending" | "bye",
+    bracket: "main",
+  }));
+
+  const { error } = await supabase.from("matches").insert(insertRows);
+  if (error) throw error;
+  return round;
+}

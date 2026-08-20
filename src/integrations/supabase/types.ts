@@ -709,15 +709,6 @@ export type Database = {
           },
         ]
       }
-      leaderboard: {
-        Row: {
-          correct_predictions: number | null
-          total_points: number | null
-          user_id: string | null
-          username: string | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
       admin_exists: { Args: never; Returns: boolean }
@@ -735,6 +726,7 @@ export type Database = {
       is_org_member: { Args: { _org_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       owns_organization: { Args: { _org_id: string }; Returns: boolean }
+      predictions_revealed: { Args: { _match_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
